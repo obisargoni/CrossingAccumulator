@@ -43,12 +43,15 @@ class Ped():
 	_road_length = None
 
 	_lambda = None # Used to control degree of randomness of pedestrian decision
+	_n_decision = None # Number of times pedestrian accumulates costs before making a decision
+	_n_accumulate = None # Number of times ped has accumulated costs
+	_chosen_ca = None
 
-	_accumulated_utility_history = None
+	_accumulated_costs_history = None
 
 
 
-	def __init__(self, location, speed, destination, crossing_altertives, road_length, lam):
+	def __init__(self, location, speed, destination, crossing_altertives, road_length, lam, n_decision):
 		self._loc = location
 		self._speed = speed
 		self._dest = destination
@@ -56,6 +59,8 @@ class Ped():
 		self._road_length = road_length
 
 		self._lambda = lam
+		self._n_decision = n_decision
+		self._n_accumulate = 0
 
 		self._crossing_alternatives = np.array([])
 		self._ped_salience_factors = np.array([])
@@ -64,7 +69,7 @@ class Ped():
 			self.add_crossing_alternative(ca, salience_factor = sf)
 
 		# At time step 0 accumulated utilities are 0
-		self._accumulated_utility_history = np.array([np.zeros(len(self._crossing_alternatives))])
+		self._accumulated_costs_history = np.array([[np.nan] * len(self._crossing_alternatives)])
 
 
 	def add_crossing_alternative(self, ca, salience_factor = 1):
@@ -80,17 +85,17 @@ class Ped():
 
 		return ca_loc
 
-	def ca_utility(self, ca):
-		'''Return the utility of the input crossing alternative for this pedestrian
+	def ca_costs(self, ca):
+		'''Return the costs of the input crossing alternative for this pedestrian
 		'''
 
 		ca_loc = self.caLoc(ca)
 
-		# utility simply defined as journey time to destination
+		# cost simply defined as journey time to destination
 		#print(self._loc, ca_loc, self._speed, ca.getWaitTime(), self._dest)
 		cost = abs(self._loc - ca_loc)*self._speed + ca.getWaitTime() + abs(ca_loc - self._dest)
-		u = -1*cost
-		return u
+		#u = np.exp(-1*self._beta*cost)
+		return cost
 
 	def ca_saliences(self):
 		'''Salience of crossing option determined by its proximity to pedestrian multiplied by pedestrian crossing salience factor.
@@ -101,21 +106,53 @@ class Ped():
 			ca_saliences.append(s)
 		return np.array(ca_saliences)
 
-	def update_utility_accumulator(self):
-		'''Sample crossing alternatives based on their utility. From the selected alternative update ped's perception of its utility.
+	def update_costs_accumulator(self):
+		'''Sample crossing alternatives based on their costs. From the selected alternative update ped's perception of its costs.
 		'''
-		# Sample crossing alternatives to select one to update perceived utility of
-		probs = scipy.special.softmax(self._lambda * self.ca_saliences())
-		i = np.argmax(probs)
 
-		ui = self.ca_utility(self._crossing_alternatives[i])
+		# Accumulate costs while decision threshold not met
+		if self._n_accumulate < self._n_decision:
+			# Sample crossing alternatives to select one to update perceived costs of
+			probs = scipy.special.softmax(self._lambda * self.ca_saliences())
 
-		accumulated_utility = self._accumulated_utility_history[-1]
-		accumulated_utility[i] = self._alpha * accumulated_utility[i] + self._beta * ui
-		self._accumulated_utility_history = np.append(self._accumulated_utility_history, [accumulated_utility], axis = 0)
+			# Choosing arg max not correct. Need to sample using these probabilities, or calculate expectation values/ use prob * costs
+			ca = np.random.choice(self._crossing_alternatives, p = probs)
+			i = np.where(self._crossing_alternatives == ca)[0][0]
 
-	def walk(self, nseconds = None):
+			ui = self.ca_costs(self._crossing_alternatives[i])
+
+			accumulated_costs = self._accumulated_costs_history[-1]
+
+			# Check if value to update is nan (meaning not updated yet). If it is initialise as zero
+			if np.isnan(accumulated_costs[i]):
+				accumulated_costs[i] = 0.0
+
+			accumulated_costs[i] = self._alpha * accumulated_costs[i] + self._beta * ui # alpha and beta control the balance of influence between new information and old information
+			self._accumulated_costs_history = np.append(self._accumulated_costs_history, [accumulated_costs], axis = 0)
+
+			self._n_accumulate += 1
+		else:
+			# Otherwise make choice
+			self.choose_ca()
+
+	def walk(self):
 		self._loc += self._speed
+
+	def choose_ca(self, history_index = -1):
+		'''Chose a crossing alternative by comparing the accumulated costs. Default to the most recent set of accumulated costs
+		'''
+
+		accumulated_costs = self._accumulated_costs_history[history_index]
+
+		# Choose option with lowest accumulated cost, ignoring nan entires as these represent options that haven't been considered
+		try:
+			cai = np.nanargmin(accumulated_costs)
+		except ValueError:
+			# If all nan make random choice
+			cai = np.random.choice(range(len(accumulated_costs)))
+
+		self._chosen_ca = self._crossing_alternatives[cai]
+
 
 
 	def getLoc(self):
@@ -128,5 +165,7 @@ class Ped():
 		return self._speed
 
 	def getAccumulatedUtilityHistory(self):
-		return self._accumulated_utility_history
+		return self._accumulated_costs_history
 
+	def getChosenCA(self):
+		return self._chosen_ca

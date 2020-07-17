@@ -10,6 +10,8 @@ import CrossingAccumulator
 CrossingAccumulator = reload(CrossingAccumulator)
 from CrossingAccumulator import CrossingAlternative, Ped
 
+ped_acumulator_rate = 1
+
 road_length = 50
 
 zebra_location = road_length * 0.75
@@ -30,30 +32,71 @@ mid_block = CrossingAlternative(wait_time = mid_block_wait_time, ctype = mid_blo
 
 # Crossing alternatives with salience factors
 p1_crossing_altertives = [(mid_block, 1), (zebra, 1)]
-p1 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = 1)
-p2 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = 5)
+p1 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = 1, n_decision = 5)
+p2 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = 5, n_decision = 5)
 
-p3 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length*0.5, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = 1)
-p4 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length*0.5, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = 5)
+p3 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length*0.5, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = 1, n_decision = 5)
+p4 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length*0.5, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = 5, n_decision = 5)
 
 
-# Run simulation for ped 1
-def run_sim(ped):
-	while ped.getLoc() < road_length:
+def run_sim(lam, n_decision):
+	ped = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = lam, n_decision = n_decision)
+	while (ped.getLoc() < road_length) and (ped.getChosenCA() is None):
 
 		# update ped's perceptions of crossing alternative utilities
-		ped.update_utility_accumulator()
+		for i in range(ped_acumulator_rate):
+			ped.update_costs_accumulator()
 
 		# move the ped along
 		ped.walk()
+	return ped
 
-run_sim(p1)
-run_sim(p2)
-run_sim(p3)
-run_sim(p4)
+def run_sim_get_ca_type(lam, n_decision):
+	ped = run_sim(lam, n_decision)
 
-# Then plots results
-p1_acc_utilities = p1.getAccumulatedUtilityHistory()
-p2_acc_utilities = p2.getAccumulatedUtilityHistory()
-p3_acc_utilities = p3.getAccumulatedUtilityHistory()
-p4_acc_utilities = p4.getAccumulatedUtilityHistory()
+	# Record crossing type chosen
+	chosen_ca = ped.getChosenCA()
+	if chosen_ca is None:
+		chosen_ca_type = 'none'
+	else:
+		chosen_ca_type = chosen_ca.getCrossingType()
+
+	return chosen_ca_type
+
+def run_sim_multiple(list_pedestrian_params):
+	peds = np.array([])
+	for params in list_pedestrian_params:
+		ped = run_sim(*params)
+		peds = np.append(peds, ped)
+	return peds
+
+def run_sim_get_ca_type_multiple(list_pedestrian_params):
+	# Run simulation for ped 1
+	chosen_ca_types = np.array([])
+
+	for params in list_pedestrian_params:
+		chosen_type = run_sim_get_ca_type(*params)
+		chosen_ca_types = np.append(chosen_ca_types, chosen_type)
+	return chosen_ca_types
+
+
+# Generate a pedestrian population out of lambdas and n_decisions
+lams1 = np.random.choice(range(1,4), 50)
+lams2 = np.random.choice(range(4,7), 50)
+n_decisions1 = np.random.choice(range(1,11), 50)
+n_decisions2 = np.random.choice(range(10,21), 50)
+
+pop1 = zip(lams1, n_decisions1)
+pop2 = zip(lams1, n_decisions2)
+pop3 = zip(lams2, n_decisions1)
+pop4 = zip(lams2, n_decisions2)
+
+# Get chrossing choices of these different populations of peds
+types1 = run_sim_get_ca_type_multiple(pop1)
+types2 = run_sim_get_ca_type_multiple(pop2)
+types3 = run_sim_get_ca_type_multiple(pop3)
+types4 = run_sim_get_ca_type_multiple(pop4)
+
+peds1 = run_sim_multiple(pop1)
+
+dfTypes = pd.DataFrame({'pop1':types1, 'pop2':types2, 'pop3':types3, 'pop4':types4})
