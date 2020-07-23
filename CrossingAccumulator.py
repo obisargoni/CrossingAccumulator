@@ -129,7 +129,7 @@ class Ped():
 			ca = np.random.choice(self._crossing_alternatives, p = probs)
 			i = np.where(self._crossing_alternatives == ca)[0][0]
 
-			ui = self.ca_costs(self._crossing_alternatives[i])
+			costi = self.ca_costs(self._crossing_alternatives[i])
 
 			accumulated_costs = self._ca_activation_history[-1]
 
@@ -137,7 +137,7 @@ class Ped():
 			if np.isnan(accumulated_costs[i]):
 				accumulated_costs[i] = 0.0
 
-			accumulated_costs[i] = self._alpha * accumulated_costs[i] + self._beta * ui # alpha and beta control the balance of influence between new information and old information
+			accumulated_costs[i] = self._alpha * accumulated_costs[i] + self._beta * costi # alpha and beta control the balance of influence between new information and old information
 			self._ca_activation_history = np.append(self._ca_activation_history, [accumulated_costs], axis = 0)
 
 			self._n_accumulate += 1
