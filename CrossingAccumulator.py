@@ -135,14 +135,14 @@ class Ped():
 
 			ui = self.ca_utility(self._crossing_alternatives[i])
 
-			accumulated_costs = self._ca_activation_history[-1]
+			ca_activations = self._ca_activation_history[-1]
 
 			# Check if value to update is nan (meaning not updated yet). If it is initialise as zero
-			if np.isnan(accumulated_costs[i]):
-				accumulated_costs[i] = 0.0
+			if np.isnan(ca_activations[i]):
+				ca_activations[i] = 0.0
 
-			accumulated_costs[i] = self._alpha * accumulated_costs[i] + self._beta * ui # alpha and beta control the balance of influence between new information and old information
-			self._ca_activation_history = np.append(self._ca_activation_history, [accumulated_costs], axis = 0)
+			ca_activations[i] = self._alpha * ca_activations[i] + self._beta * ui # alpha and beta control the balance of influence between new information and old information
+			self._ca_activation_history = np.append(self._ca_activation_history, [ca_activations], axis = 0)
 
 			self._n_accumulate += 1
 		else:
@@ -163,14 +163,14 @@ class Ped():
 		'''Chose a crossing alternative by comparing the accumulated costs. Default to the most recent set of accumulated costs
 		'''
 
-		accumulated_costs = self._ca_activation_history[history_index]
+		ca_activations = self._ca_activation_history[history_index]
 
 		# Choose option with lowest accumulated cost, ignoring nan entires as these represent options that haven't been considered
 		try:
-			cai = np.nanargmin(accumulated_costs)
+			cai = np.nanargmax(ca_activations)
 		except ValueError:
 			# If all nan make random choice
-			cai = np.random.choice(range(len(accumulated_costs)))
+			cai = np.random.choice(range(len(ca_activations)))
 
 		self._chosen_ca = self._crossing_alternatives[cai]
 
