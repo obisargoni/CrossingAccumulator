@@ -95,17 +95,21 @@ class Ped():
 
 		return ca_loc
 
-	def ca_costs(self, ca):
-		'''Return the costs of the input crossing alternative for this pedestrian
+	def ca_utility(self, ca):
+		'''Return the utility of the input crossing alternative for this pedestrian
 		'''
 
 		ca_loc = self.caLoc(ca)
 
-		# cost simply defined as journey time to destination
-		#print(self._loc, ca_loc, self._speed, ca.getWaitTime(), self._dest)
-		cost = abs(self._loc - ca_loc)*self._speed + ca.getWaitTime() + abs(ca_loc - self._dest)
-		#u = np.exp(-1*self._beta*cost)
-		return cost
+		# separate costsing into waiting and walking on road time (no traffic exposure) time
+		ww_time = abs(self._loc - ca_loc)*self._speed + ca.getWaitTime() + abs(ca_loc - self._dest)
+
+		# and vehicle exposure when crossing the road
+		ve = self.vehicleExposure(ca)
+
+		cost = ww_time * ve
+
+		return 1/cost
 
 	def ca_saliences(self):
 		'''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
@@ -129,7 +133,7 @@ class Ped():
 			ca = np.random.choice(self._crossing_alternatives, p = probs)
 			i = np.where(self._crossing_alternatives == ca)[0][0]
 
-			costi = self.ca_costs(self._crossing_alternatives[i])
+			ui = self.ca_utility(self._crossing_alternatives[i])
 
 			accumulated_costs = self._ca_activation_history[-1]
 
@@ -137,7 +141,7 @@ class Ped():
 			if np.isnan(accumulated_costs[i]):
 				accumulated_costs[i] = 0.0
 
-			accumulated_costs[i] = self._alpha * accumulated_costs[i] + self._beta * costi # alpha and beta control the balance of influence between new information and old information
+			accumulated_costs[i] = self._alpha * accumulated_costs[i] + self._beta * ui # alpha and beta control the balance of influence between new information and old information
 			self._ca_activation_history = np.append(self._ca_activation_history, [accumulated_costs], axis = 0)
 
 			self._n_accumulate += 1
