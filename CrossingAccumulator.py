@@ -163,6 +163,17 @@ class Ped():
 
 		self._chosen_ca = self._crossing_alternatives[cai]
 
+	def vehicleExposure(self, ca):
+		'''Pedestrian vehicle exposure calcualted as the number of vehicles that will pass through crossing during time it takes ped to cross raised
+		to the power of the pedestrian traffic sensitivity parameter.
+		'''
+
+		t_cross = self._road_width / self._speed
+
+		ve = (t_cross * ca.getVehicleFlow()) ** self._r
+
+		return ve
+
 
 
 	def getLoc(self):
