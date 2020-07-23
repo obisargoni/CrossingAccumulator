@@ -28,6 +28,12 @@ class CrossingAlternative():
 	def getCrossingType(self):
 		return self._ctype
 
+	def getVehicleFlow():
+		'''Get vehicle flow at vicinity of the crossing
+		'''
+
+
+
 
 class Ped():
 
@@ -47,7 +53,7 @@ class Ped():
 	_n_accumulate = None # Number of times ped has accumulated costs
 	_chosen_ca = None
 
-	_accumulated_costs_history = None
+	_ca_activation_history = None
 
 
 
@@ -69,7 +75,7 @@ class Ped():
 			self.add_crossing_alternative(ca, salience_factor = sf)
 
 		# At time step 0 accumulated utilities are 0
-		self._accumulated_costs_history = np.array([[np.nan] * len(self._crossing_alternatives)])
+		self._ca_activation_history = np.array([[np.nan] * len(self._crossing_alternatives)])
 
 
 	def add_crossing_alternative(self, ca, salience_factor = 1):
@@ -121,14 +127,14 @@ class Ped():
 
 			ui = self.ca_costs(self._crossing_alternatives[i])
 
-			accumulated_costs = self._accumulated_costs_history[-1]
+			accumulated_costs = self._ca_activation_history[-1]
 
 			# Check if value to update is nan (meaning not updated yet). If it is initialise as zero
 			if np.isnan(accumulated_costs[i]):
 				accumulated_costs[i] = 0.0
 
 			accumulated_costs[i] = self._alpha * accumulated_costs[i] + self._beta * ui # alpha and beta control the balance of influence between new information and old information
-			self._accumulated_costs_history = np.append(self._accumulated_costs_history, [accumulated_costs], axis = 0)
+			self._ca_activation_history = np.append(self._ca_activation_history, [accumulated_costs], axis = 0)
 
 			self._n_accumulate += 1
 		else:
@@ -142,7 +148,7 @@ class Ped():
 		'''Chose a crossing alternative by comparing the accumulated costs. Default to the most recent set of accumulated costs
 		'''
 
-		accumulated_costs = self._accumulated_costs_history[history_index]
+		accumulated_costs = self._ca_activation_history[history_index]
 
 		# Choose option with lowest accumulated cost, ignoring nan entires as these represent options that haven't been considered
 		try:
@@ -164,8 +170,8 @@ class Ped():
 	def getSpeed(self):
 		return self._speed
 
-	def getAccumulatedUtilityHistory(self):
-		return self._accumulated_costs_history
+	def getActivationHistory(self):
+		return self._ca_activation_history
 
 	def getChosenCA(self):
 		return self._chosen_ca
