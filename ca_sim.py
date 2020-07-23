@@ -13,6 +13,7 @@ from CrossingAccumulator import CrossingAlternative, Ped
 ped_acumulator_rate = 1
 
 road_length = 50
+road_width = 10
 
 zebra_location = road_length * 0.75
 zebra_wait_time = 0
@@ -24,23 +25,25 @@ mid_block_type = 'mid_block'
 ped_start_location = 0
 ped_walking_speed = 3
 
+vehicle_flow = 1
+
 # initialise two crossing alternatives, one a zebra crossing and one mid block crossing
-zebra = CrossingAlternative(location = zebra_location, wait_time = zebra_wait_time, ctype = zebra_type, name = 'z1')
-mid_block = CrossingAlternative(wait_time = mid_block_wait_time, ctype = mid_block_type, name = 'mid1')
+zebra = CrossingAlternative(location = zebra_location, wait_time = zebra_wait_time, ctype = zebra_type, name = 'z1', vehicle_flow = vehicle_flow)
+mid_block = CrossingAlternative(wait_time = mid_block_wait_time, ctype = mid_block_type, name = 'mid1', vehicle_flow = vehicle_flow)
 
 # Initialise a pedestrian agent
 
 # Crossing alternatives with salience factors
 p1_crossing_altertives = [(mid_block, 1), (zebra, 1)]
-p1 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = 1, n_decision = 5)
-p2 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = 5, n_decision = 5)
+p1 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length, crossing_altertives = p1_crossing_altertives, road_length = road_length, road_width = road_width, lam = 1, r = 1, n_decision = 5)
+p2 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length, crossing_altertives = p1_crossing_altertives, road_length = road_length, road_width = road_width, lam = 5, r = 1, n_decision = 5)
 
-p3 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length*0.5, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = 1, n_decision = 5)
-p4 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length*0.5, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = 5, n_decision = 5)
+p3 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length*0.5, crossing_altertives = p1_crossing_altertives, road_length = road_length, road_width = road_width, lam = 1, r = 1, n_decision = 5)
+p4 = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length*0.5, crossing_altertives = p1_crossing_altertives, road_length = road_length, road_width = road_width, lam = 5, r = 1, n_decision = 5)
 
 
-def run_sim(lam, n_decision):
-	ped = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length, crossing_altertives = p1_crossing_altertives, road_length = road_length, lam = lam, n_decision = n_decision)
+def run_sim(lam, r, n_decision):
+	ped = Ped(location = ped_start_location, speed = ped_walking_speed, destination = road_length, crossing_altertives = p1_crossing_altertives, road_length = road_length, road_width = road_width, lam = lam, r = r, n_decision = n_decision)
 	while (ped.getLoc() < road_length) and (ped.getChosenCA() is None):
 
 		# update ped's perceptions of crossing alternative utilities
@@ -51,8 +54,8 @@ def run_sim(lam, n_decision):
 		ped.walk()
 	return ped
 
-def run_sim_get_ca_type(lam, n_decision):
-	ped = run_sim(lam, n_decision)
+def run_sim_get_ca_type(lam, r, n_decision):
+	ped = run_sim(lam, r, n_decision)
 
 	# Record crossing type chosen
 	chosen_ca = ped.getChosenCA()
@@ -85,11 +88,12 @@ lams1 = np.random.choice(range(1,4), 50)
 lams2 = np.random.choice(range(4,7), 50)
 n_decisions1 = np.random.choice(range(1,11), 50)
 n_decisions2 = np.random.choice(range(10,21), 50)
+rs = np.ones(50)
 
-pop1 = zip(lams1, n_decisions1)
-pop2 = zip(lams1, n_decisions2)
-pop3 = zip(lams2, n_decisions1)
-pop4 = zip(lams2, n_decisions2)
+pop1 = zip(lams1, rs, n_decisions1)
+pop2 = zip(lams1, rs, n_decisions2)
+pop3 = zip(lams2, rs, n_decisions1)
+pop4 = zip(lams2, rs, n_decisions2)
 
 # Get chrossing choices of these different populations of peds
 types1 = run_sim_get_ca_type_multiple(pop1)
