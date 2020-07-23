@@ -163,6 +163,15 @@ class Ped():
 
 		self._chosen_ca = self._crossing_alternatives[cai]
 
+	def remove_ca(ca):
+		'''Used to remove a crossing alternative from set of alternatives under consideration
+		'''
+		i = np.where(self._crossing_alternatives == ca)[0][0]
+
+		self._crossing_alternatives = np.delete(self._crossing_alternatives, i)
+		self._ca_activation_history = np.delete(self._ca_activation_history, i, axis = 1)
+		return
+
 	def vehicleExposure(self, ca):
 		'''Pedestrian vehicle exposure calcualted as the number of vehicles that will pass through crossing during time it takes ped to cross raised
 		to the power of the pedestrian traffic sensitivity parameter.
