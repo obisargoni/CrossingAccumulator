@@ -48,6 +48,7 @@ class Ped():
 	_ped_salience_factors = None
 
 	_road_length = None
+	_road_width = None
 
 	_lambda = None # Used to control degree of randomness of pedestrian decision
 	_r = None # Controls sensitivity to traffic exposure
@@ -57,12 +58,13 @@ class Ped():
 	_chosen_ca = None
 	_ca_activation_history = None
 
-	def __init__(self, location, speed, destination, crossing_altertives, road_length, lam r, n_decision):
+	def __init__(self, location, speed, destination, crossing_altertives, road_length, road_width, lam, r, n_decision):
 		self._loc = location
 		self._speed = speed
 		self._dest = destination
 
 		self._road_length = road_length
+		self._road_width = road_width
 
 		self._lambda = lam
 		self._r = r
