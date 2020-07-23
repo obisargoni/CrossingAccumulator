@@ -148,6 +148,13 @@ class Ped():
 	def walk(self):
 		self._loc += self._speed
 
+		# if agent has passed a crossing alternative remove it from those under consideration (assume that peds don't go back on themselves)
+		for ca in self._crossing_alternatives:
+			if (self._loc > (ca.getLoc() + 2)):
+				self.remove_ca(ca)
+		return
+
+
 	def choose_ca(self, history_index = -1):
 		'''Chose a crossing alternative by comparing the accumulated costs. Default to the most recent set of accumulated costs
 		'''
