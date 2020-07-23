@@ -108,11 +108,11 @@ class Ped():
 		return cost
 
 	def ca_saliences(self):
-		'''Salience of crossing option determined by its proximity to pedestrian multiplied by pedestrian crossing salience factor.
+		'''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
 		'''
 		ca_saliences = []
 		for (i,ca) in enumerate(self._crossing_alternatives):
-			s = ((self._road_length - abs(self._loc - self.caLoc(ca))) / self._road_length) * self._ped_salience_factors[i]
+			s = (2*self._road_length - (abs(self._loc - self.caLoc(ca) + abs(self._dest - self.caLoc(ca))))) / self._road_length
 			ca_saliences.append(s)
 		return np.array(ca_saliences)
 
