@@ -10,11 +10,14 @@ class CrossingAlternative():
 	_ctype = None
 	_name = None
 
-	def __init__(self, location = None, wait_time = None, ctype = None, name = None):
+	_vehicle_flow = None
+
+	def __init__(self, location = None, wait_time = None, ctype = None, name = None, vehicle_flow = None):
 		self._loc = location
 		self._wait_time = wait_time
 		self._ctype = ctype
 		self._name = name
+		self._vehicle_flow = vehicle_flow
 
 	def getLoc(self):
 		return self._loc
@@ -28,10 +31,8 @@ class CrossingAlternative():
 	def getCrossingType(self):
 		return self._ctype
 
-	def getVehicleFlow():
-		'''Get vehicle flow at vicinity of the crossing
-		'''
-
+	def getVehicleFlow(self):
+		return self._vehicle_flow
 
 
 
