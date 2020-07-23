@@ -49,15 +49,14 @@ class Ped():
 	_road_length = None
 
 	_lambda = None # Used to control degree of randomness of pedestrian decision
+	_r = None # Controls sensitivity to traffic exposure
+
 	_n_decision = None # Number of times pedestrian accumulates costs before making a decision
 	_n_accumulate = None # Number of times ped has accumulated costs
 	_chosen_ca = None
-
 	_ca_activation_history = None
 
-
-
-	def __init__(self, location, speed, destination, crossing_altertives, road_length, lam, n_decision):
+	def __init__(self, location, speed, destination, crossing_altertives, road_length, lam r, n_decision):
 		self._loc = location
 		self._speed = speed
 		self._dest = destination
@@ -65,6 +64,8 @@ class Ped():
 		self._road_length = road_length
 
 		self._lambda = lam
+		self._r = r
+
 		self._n_decision = n_decision
 		self._n_accumulate = 0
 
