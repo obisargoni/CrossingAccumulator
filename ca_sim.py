@@ -48,7 +48,7 @@ def run_sim(lam, r, n_decision):
 
 		# update ped's perceptions of crossing alternative utilities
 		for i in range(ped_acumulator_rate):
-			ped.update_costs_accumulator()
+			ped.accumulate_ca_activation()
 
 		# move the ped along
 		ped.walk()

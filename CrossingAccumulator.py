@@ -122,7 +122,7 @@ class Ped():
 			ca_saliences.append(s)
 		return np.array(ca_saliences)
 
-	def update_costs_accumulator(self):
+	def accumulate_ca_activation(self):
 		'''Sample crossing alternatives based on their costs. From the selected alternative update ped's perception of its costs.
 		'''
 
