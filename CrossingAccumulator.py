@@ -157,7 +157,7 @@ class Ped():
 
 		# if agent has passed a crossing alternative remove it from those under consideration (assume that peds don't go back on themselves)
 		for ca in self._crossing_alternatives:
-			if (self._loc > (ca.getLoc() + 2)):
+			if (self._loc > (self.caLoc(ca) + 2)):
 				self.remove_ca(ca)
 		return
 
@@ -185,7 +185,7 @@ class Ped():
 		# If nearest dominant ca identified, find distance to this crossing. If within threshold distance choosing this crossing option
 		if nearest_ca is not None:
 			dist_nearest_ca = abs(self._loc - self.caLoc(nearest_ca))
-			if dist_dom_ca < self._ca_distance_threshold:
+			if dist_nearest_ca < self._ca_distance_threshold:
 				self._chosen_ca = nearest_ca
 
 	def remove_ca(ca):
