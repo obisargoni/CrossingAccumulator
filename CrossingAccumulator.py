@@ -155,10 +155,6 @@ class Ped():
 		# Check whether a crossing alternative has emerged as the dominant alternative and choose it if it's nearby
 		self.choose_ca()
 
-		# if agent has passed a crossing alternative remove it from those under consideration (assume that peds don't go back on themselves)
-		for ca in self._crossing_alternatives:
-			if (self._loc > (self.caLoc(ca) + 2)):
-				self.remove_ca(ca)
 		return
 
 
@@ -188,14 +184,6 @@ class Ped():
 			if dist_nearest_ca < self._ca_distance_threshold:
 				self._chosen_ca = nearest_ca
 
-	def remove_ca(self, ca):
-		'''Used to remove a crossing alternative from set of alternatives under consideration
-		'''
-		i = np.where(self._crossing_alternatives == ca)[0][0]
-
-		self._crossing_alternatives = np.delete(self._crossing_alternatives, i)
-		self._ca_activation_history = np.delete(self._ca_activation_history, i, axis = 1)
-		return
 
 	def vehicleExposure(self, ca):
 		'''Pedestrian vehicle exposure calcualted as the number of vehicles that will pass through crossing during time it takes ped to cross raised
