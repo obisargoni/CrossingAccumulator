@@ -55,12 +55,12 @@ class Ped():
 	_lambda = None # Used to control degree of randomness of pedestrian decision
 	_r = None # Controls sensitivity to traffic exposure
 
-	_ca_dominant_proportion = None # Proportion of median activation that ca activation must be to be considered dominant
+	_activation_threshold_factor = None # Proportion of median activation that ca activation must be to be considered dominant
 	_n_accumulate = None # Number of times ped has accumulated costs
 	_chosen_ca = None
 	_ca_activation_history = None
 
-	def __init__(self, location, speed, destination, crossing_altertives, road_length, road_width, lam, r, ca_dominant_proportion):
+	def __init__(self, location, speed, destination, crossing_altertives, road_length, road_width, lam, r, activation_threshold_factor):
 		self._loc = location
 		self._speed = speed
 		self._dest = destination
@@ -71,7 +71,7 @@ class Ped():
 		self._lambda = lam
 		self._r = r
 
-		self._ca_dominant_proportion = ca_dominant_proportion
+		self._activation_threshold_factor = activation_threshold_factor
 		self._n_accumulate = 0
 
 		self._crossing_alternatives = np.array([])
@@ -168,7 +168,7 @@ class Ped():
 
 		# Get the indices of crossing alternatives whose activation is above the threshold value
 		ca_activations = self._ca_activation_history[history_index]
-		dom_threshold = np.nanmean(ca_activations) * self._ca_dominant_proportion
+		dom_threshold = np.nanmean(ca_activations) * self._activation_threshold_factor
 		dominant_indices = np.where( ca_activations > dom_threshold)
 
 		# Select the nearest of these
