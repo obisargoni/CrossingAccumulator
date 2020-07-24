@@ -38,8 +38,7 @@ class CrossingAlternative():
 
 class Ped():
 
-	_alpha = 0.9
-	_beta = 1 - _alpha
+	_gamma = 0.9 # controls the rate at which historic activations decay
 
 	_loc = None
 	_speed = None # ms-1
@@ -124,30 +123,28 @@ class Ped():
 		'''Sample crossing alternatives based on their costs. From the selected alternative update ped's perception of its costs.
 		'''
 
-		# Accumulate costs while decision threshold not met
-		if self._n_accumulate < self._n_decision:
-			# Sample crossing alternatives to select one to update perceived costs of
-			probs = scipy.special.softmax(self._lambda * self.ca_saliences())
+		# Sample crossing alternatives according to their salience
+		probs = scipy.special.softmax(self._lambda * self.ca_saliences())
+		ca = np.random.choice(self._crossing_alternatives, p = probs)
+		i = np.where(self._crossing_alternatives == ca)[0][0]
 
-			# Choosing arg max not correct. Need to sample using these probabilities, or calculate expectation values/ use prob * costs
-			ca = np.random.choice(self._crossing_alternatives, p = probs)
-			i = np.where(self._crossing_alternatives == ca)[0][0]
+		# Get utility of sampled alternative
+		ui = self.ca_utility(self._crossing_alternatives[i])
 
-			ui = self.ca_utility(self._crossing_alternatives[i])
+		ca_activations = self._ca_activation_history[-1]
 
-			ca_activations = self._ca_activation_history[-1]
+		# Check if value to update is nan (meaning not updated yet). If it is initialise as zero
+		if np.isnan(ca_activations[i]):
+			ca_activations[i] = 0.0
 
-			# Check if value to update is nan (meaning not updated yet). If it is initialise as zero
-			if np.isnan(ca_activations[i]):
-				ca_activations[i] = 0.0
+		# Decay accumulated activations
+		ca_activations = ca_activations * self._gamma
 
-			ca_activations[i] = self._alpha * ca_activations[i] + self._beta * ui # alpha and beta control the balance of influence between new information and old information
-			self._ca_activation_history = np.append(self._ca_activation_history, [ca_activations], axis = 0)
+		# Accumulate new activation for sampled ca
+		ca_activations[i] += ui
 
-			self._n_accumulate += 1
-		else:
-			# Otherwise make choice
-			self.choose_ca()
+		self._ca_activation_history = np.append(self._ca_activation_history, [ca_activations], axis = 0)
+
 
 	def walk(self):
 		self._loc += self._speed
