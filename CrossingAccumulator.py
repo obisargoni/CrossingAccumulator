@@ -188,7 +188,7 @@ class Ped():
 			if dist_nearest_ca < self._ca_distance_threshold:
 				self._chosen_ca = nearest_ca
 
-	def remove_ca(ca):
+	def remove_ca(self, ca):
 		'''Used to remove a crossing alternative from set of alternatives under consideration
 		'''
 		i = np.where(self._crossing_alternatives == ca)[0][0]
