@@ -2,6 +2,7 @@
 
 import numpy as np
 import scipy.special
+import sys
 
 class CrossingAlternative():
 
@@ -46,18 +47,20 @@ class Ped():
 	_crossing_alternatives = None
 	_ped_salience_factors = None
 
+	_ca_distance_threshold = 2 # Distance in meters ped must be to ca to choose it or beyond ca to exclude it from further consideration
+
 	_road_length = None
 	_road_width = None
 
 	_lambda = None # Used to control degree of randomness of pedestrian decision
 	_r = None # Controls sensitivity to traffic exposure
 
-	_n_decision = None # Number of times pedestrian accumulates costs before making a decision
+	_ca_dominant_proportion = None # Proportion of median activation that ca activation must be to be considered dominant
 	_n_accumulate = None # Number of times ped has accumulated costs
 	_chosen_ca = None
 	_ca_activation_history = None
 
-	def __init__(self, location, speed, destination, crossing_altertives, road_length, road_width, lam, r, n_decision):
+	def __init__(self, location, speed, destination, crossing_altertives, road_length, road_width, lam, r, ca_dominant_proportion):
 		self._loc = location
 		self._speed = speed
 		self._dest = destination
@@ -68,7 +71,7 @@ class Ped():
 		self._lambda = lam
 		self._r = r
 
-		self._n_decision = n_decision
+		self._ca_dominant_proportion = ca_dominant_proportion
 		self._n_accumulate = 0
 
 		self._crossing_alternatives = np.array([])
@@ -149,6 +152,9 @@ class Ped():
 	def walk(self):
 		self._loc += self._speed
 
+		# Check whether a crossing alternative has emerged as the dominant alternative and choose it if it's nearby
+		self.choose_ca()
+
 		# if agent has passed a crossing alternative remove it from those under consideration (assume that peds don't go back on themselves)
 		for ca in self._crossing_alternatives:
 			if (self._loc > (ca.getLoc() + 2)):
@@ -160,16 +166,27 @@ class Ped():
 		'''Chose a crossing alternative by comparing the accumulated costs. Default to the most recent set of accumulated costs
 		'''
 
+		# Get the indices of crossing alternatives whose activation is above the threshold value
 		ca_activations = self._ca_activation_history[history_index]
+		dom_threshold = np.nanmean(ca_activations) * self._ca_dominant_proportion
+		dominant_indices = np.where( ca_activations > dom_threshold)
 
-		# Choose option with lowest accumulated cost, ignoring nan entires as these represent options that haven't been considered
-		try:
-			cai = np.nanargmax(ca_activations)
-		except ValueError:
-			# If all nan make random choice
-			cai = np.random.choice(range(len(ca_activations)))
+		# Select the nearest of these
+		min_dist = sys.float_info.max
+		nearest_ca = None
+		for i in dominant_indices[0]:
+			dom_ca = self._crossing_alternatives[i]
+		
+			if (self.caLoc(dom_ca) < min_dist):
+				min_dist = self.caLoc(dom_ca)
+				nearest_ca = dom_ca
 
-		self._chosen_ca = self._crossing_alternatives[cai]
+
+		# If nearest dominant ca identified, find distance to this crossing. If within threshold distance choosing this crossing option
+		if nearest_ca is not None:
+			dist_nearest_ca = abs(self._loc - self.caLoc(nearest_ca))
+			if dist_dom_ca < self._ca_distance_threshold:
+				self._chosen_ca = nearest_ca
 
 	def remove_ca(ca):
 		'''Used to remove a crossing alternative from set of alternatives under consideration
