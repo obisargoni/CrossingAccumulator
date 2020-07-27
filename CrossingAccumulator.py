@@ -118,7 +118,7 @@ class Ped(Agent):
 
         cost = ww_time * ve
 
-        return 1/cost
+        return np.exp(-1*cost)
 
     def ca_saliences(self):
         '''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
