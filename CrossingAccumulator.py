@@ -4,226 +4,298 @@ import numpy as np
 import scipy.special
 import sys
 
-class CrossingAlternative():
+from mesa import Agent, Model
+from mesa.datacollection import DataCollector
+from mesa.time import RandomActivation
 
-	_loc = None
-	_wait_time = None
-	_ctype = None
-	_name = None
+class CrossingAlternative(Agent):
 
-	_vehicle_flow = None
+    _loc = None
+    _wait_time = None
+    _ctype = None
+    _name = None
 
-	def __init__(self, location = None, wait_time = None, ctype = None, name = None, vehicle_flow = None):
-		self._loc = location
-		self._wait_time = wait_time
-		self._ctype = ctype
-		self._name = name
-		self._vehicle_flow = vehicle_flow
+    _vehicle_flow = None
 
-	def getLoc(self):
-		return self._loc
+    def __init__(self, unique_id, model, location = None, wait_time = None, ctype = None, name = None, vehicle_flow = None):
+        super().__init__(unique_id, model)
+        self._loc = location
+        self._wait_time = wait_time
+        self._ctype = ctype
+        self._name = name
+        self._vehicle_flow = vehicle_flow
 
-	def getWaitTime(self):
-		return self._wait_time
+    def getLoc(self):
+        return self._loc
 
-	def getName(self):
-		return self._name
+    def getWaitTime(self):
+        return self._wait_time
 
-	def getCrossingType(self):
-		return self._ctype
+    def getName(self):
+        return self._name
 
-	def getVehicleFlow(self):
-		return self._vehicle_flow
+    def getCrossingType(self):
+        return self._ctype
 
+    def getVehicleFlow(self):
+        return self._vehicle_flow
 
 
-class Ped():
 
-	_gamma = 0.9 # controls the rate at which historic activations decay
+class Ped(Agent):
 
-	_loc = None
-	_speed = None # ms-1
-	_dest = None
-	_crossing_alternatives = None
-	_ped_salience_factors = None
+    _gamma = None # controls the rate at which historic activations decay
 
-	_ca_distance_threshold = 2 # Distance in meters ped must be to ca to choose it or beyond ca to exclude it from further consideration
+    _loc = None
+    _speed = None # ms-1
+    _dest = None
+    _crossing_alternatives = None
+    _ped_salience_factors = None
 
-	_road_length = None
-	_road_width = None
+    _ca_distance_threshold = 2 # Distance in meters ped must be to ca to choose it or beyond ca to exclude it from further consideration
 
-	_lambda = None # Used to control degree of randomness of pedestrian decision
-	_r = None # Controls sensitivity to traffic exposure
+    _road_length = None
+    _road_width = None
 
-	_activation_threshold_factor = None # Proportion of median activation that ca activation must be to be considered dominant
-	_n_accumulate = None # Number of times ped has accumulated costs
-	_chosen_ca = None
-	_ca_activation_history = None
+    _lambda = None # Used to control degree of randomness of pedestrian decision
+    _r = None # Controls sensitivity to traffic exposure
 
-	def __init__(self, location, speed, destination, crossing_altertives, road_length, road_width, lam, r, activation_threshold_factor):
-		self._loc = location
-		self._speed = speed
-		self._dest = destination
+    _alpha = None # Proportion of median activation that ca activation must be to be considered dominant
+    _acumulator_rate = None
+    _chosen_ca = None
+    _ca_activation_history = None
 
-		self._road_length = road_length
-		self._road_width = road_width
+    def __init__(self, unique_id, model, location, speed, destination, crossing_altertives, road_length, road_width, alpha, gamma, lam, r, a_rate):
+        super().__init__(unique_id, model)
+        self._loc = location
+        self._speed = speed
+        self._dest = destination
 
-		self._lambda = lam
-		self._r = r
+        self._road_length = road_length
+        self._road_width = road_width
 
-		self._activation_threshold_factor = activation_threshold_factor
-		self._n_accumulate = 0
+        self._lambda = lam
+        self._r = r
+        self._acumulator_rate = a_rate
 
-		self._crossing_alternatives = np.array([])
-		self._ped_salience_factors = np.array([])
+        self._alpha = alpha
+        self._gamma = gamma
 
-		for ca, sf in crossing_altertives:
-			self.add_crossing_alternative(ca, salience_factor = sf)
+        self._crossing_alternatives = np.array([])
+        self._ped_salience_factors = np.array([])
 
-		# At time step 0 accumulated utilities are 0
-		self._ca_activation_history = np.array([[np.nan] * len(self._crossing_alternatives)])
+        for ca, sf in crossing_altertives:
+            self.add_crossing_alternative(ca, salience_factor = sf)
 
+        # At time step 0 accumulated utilities are 0
+        self._ca_activation_history = np.array([[np.nan] * len(self._crossing_alternatives)])
 
-	def add_crossing_alternative(self, ca, salience_factor = 1):
-		self._crossing_alternatives = np.append(self._crossing_alternatives, ca)
-		self._ped_salience_factors = np.append(self._ped_salience_factors, salience_factor)
 
-	def caLoc(self, ca):
-		ca_loc = ca.getLoc()
+    def add_crossing_alternative(self, ca, salience_factor = 1):
+        self._crossing_alternatives = np.append(self._crossing_alternatives, ca)
+        self._ped_salience_factors = np.append(self._ped_salience_factors, salience_factor)
 
-		# Mid block crossings not assigned a locations because they take place at ped's current location
-		if ca_loc is None:
-			ca_loc = self._loc
+    def caLoc(self, ca):
+        ca_loc = ca.getLoc()
 
-		return ca_loc
+        # Mid block crossings not assigned a locations because they take place at ped's current location
+        if ca_loc is None:
+            ca_loc = self._loc
 
-	def ca_utility(self, ca):
-		'''Return the utility of the input crossing alternative for this pedestrian
-		'''
+        return ca_loc
 
-		ca_loc = self.caLoc(ca)
+    def ca_utility(self, ca):
+        '''Return the utility of the input crossing alternative for this pedestrian
+        '''
 
-		# separate costsing into waiting and walking on road time (no traffic exposure) time
-		ww_time = abs(self._loc - ca_loc)*self._speed + ca.getWaitTime() + abs(ca_loc - self._dest)
+        ca_loc = self.caLoc(ca)
 
-		# and vehicle exposure when crossing the road
-		ve = self.vehicleExposure(ca)
+        # separate costsing into waiting and walking on road time (no traffic exposure) time
+        ww_time = abs(self._loc - ca_loc)*self._speed + ca.getWaitTime() + abs(ca_loc - self._dest)
 
-		cost = ww_time * ve
+        # and vehicle exposure when crossing the road
+        ve = self.vehicleExposure(ca)
 
-		return 1/cost
+        cost = ww_time * ve
 
-	def ca_saliences(self):
-		'''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
-		'''
-		ca_saliences = []
-		for (i,ca) in enumerate(self._crossing_alternatives):
+        return 1/cost
 
-			# Get distance from agent to destination
-			d = self._dest - self._loc
+    def ca_saliences(self):
+        '''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
+        '''
+        ca_saliences = []
+        for (i,ca) in enumerate(self._crossing_alternatives):
 
-			# Get distnaces to and from the ca
-			d_to = self.caLoc(ca) - self._loc
-			d_from = self._dest - self.caLoc(cs)
+            # Get distance from agent to destination
+            d = self._dest - self._loc
 
-			# Compare signs to determine whether ca lies in direction of destination or not. Use this to calculate salience distance
-			if (np.sign(d) == np.sign(d_to)):
-				d_s = d - (abs(d_to) + abs(d_from))
-			else:
-				d_s = d + (abs(d_to) + abs(d_from))
+            # Get distnaces to and from the ca
+            d_to = self.caLoc(ca) - self._loc
+            d_from = self._dest - self.caLoc(ca)
 
-			# transform salience so that low distances are high salience (because they represent cas closer to ped agent)
-			s = (2*self._road_length - d_s) / self._road_length
-			ca_saliences.append(s)
-		return np.array(ca_saliences)
+            # Compare signs to determine whether ca lies in direction of destination or not. Use this to calculate salience distance
+            if (np.sign(d) == np.sign(d_to)):
+                d_s = d - (abs(d_to) + abs(d_from))
+            else:
+                d_s = d + (abs(d_to) + abs(d_from))
 
-	def accumulate_ca_activation(self):
-		'''Sample crossing alternatives based on their costs. From the selected alternative update ped's perception of its costs.
-		'''
+            # transform salience so that low distances are high salience (because they represent cas closer to ped agent)
+            s = (2*self._road_length - d_s) / self._road_length
+            ca_saliences.append(s)
+        return np.array(ca_saliences)
 
-		# Sample crossing alternatives according to their salience
-		probs = scipy.special.softmax(self._lambda * self.ca_saliences())
-		ca = np.random.choice(self._crossing_alternatives, p = probs)
-		i = np.where(self._crossing_alternatives == ca)[0][0]
+    def accumulate_ca_activation(self):
+        '''Sample crossing alternatives based on their costs. From the selected alternative update ped's perception of its costs.
+        '''
 
-		# Get utility of sampled alternative
-		ui = self.ca_utility(self._crossing_alternatives[i])
+        # Sample crossing alternatives according to their salience
+        probs = scipy.special.softmax(self._lambda * self.ca_saliences())
+        ca = np.random.choice(self._crossing_alternatives, p = probs)
+        i = np.where(self._crossing_alternatives == ca)[0][0]
 
-		ca_activations = self._ca_activation_history[-1]
+        # Get utility of sampled alternative
+        ui = self.ca_utility(self._crossing_alternatives[i])
 
-		# Check if value to update is nan (meaning not updated yet). If it is initialise as zero
-		if np.isnan(ca_activations[i]):
-			ca_activations[i] = 0.0
+        ca_activations = self._ca_activation_history[-1]
 
-		# Decay accumulated activations
-		ca_activations = ca_activations * self._gamma
+        # Check if value to update is nan (meaning not updated yet). If it is initialise as zero
+        if np.isnan(ca_activations[i]):
+            ca_activations[i] = 0.0
 
-		# Accumulate new activation for sampled ca
-		ca_activations[i] += ui
+        # Decay accumulated activations
+        ca_activations = ca_activations * self._gamma
 
-		self._ca_activation_history = np.append(self._ca_activation_history, [ca_activations], axis = 0)
+        # Accumulate new activation for sampled ca
+        ca_activations[i] += ui
 
+        self._ca_activation_history = np.append(self._ca_activation_history, [ca_activations], axis = 0)
 
-	def walk(self):
-		self._loc += self._speed
 
-		# Check whether a crossing alternative has emerged as the dominant alternative and choose it if it's nearby
-		self.choose_ca()
+    def walk(self):
+        self._loc += self._speed
 
-		return
+        # Check whether a crossing alternative has emerged as the dominant alternative and choose it if it's nearby
+        self.choose_ca()
 
+        return
 
-	def choose_ca(self, history_index = -1):
-		'''Chose a crossing alternative by comparing the accumulated costs. Default to the most recent set of accumulated costs
-		'''
+    def step(self):
 
-		# Get the indices of crossing alternatives whose activation is above the threshold value
-		ca_activations = self._ca_activation_history[history_index]
-		dom_threshold = np.nanmean(ca_activations) * self._activation_threshold_factor
-		dominant_indices = np.where( ca_activations > dom_threshold)
+        # Check if ped has reached end of the road or if it has chosen a crossing
+        if (self.getLoc() < self._road_length) and (self._chosen_ca is None):
 
-		# Select the nearest of these
-		min_dist = sys.float_info.max
-		nearest_ca = None
-		for i in dominant_indices[0]:
-			dom_ca = self._crossing_alternatives[i]
-		
-			if (self.caLoc(dom_ca) < min_dist):
-				min_dist = self.caLoc(dom_ca)
-				nearest_ca = dom_ca
+            # update ped's perceptions of crossing alternative utilities
+            for i in range(self._acumulator_rate):
+                self.accumulate_ca_activation()
 
+            # move the ped along
+            self.walk()
+        else:
+            # When agent is done remove from schedule
+            self.model.schedule.remove(self)
 
-		# If nearest dominant ca identified, find distance to this crossing. If within threshold distance choosing this crossing option
-		if nearest_ca is not None:
-			dist_nearest_ca = abs(self._loc - self.caLoc(nearest_ca))
-			if dist_nearest_ca < self._ca_distance_threshold:
-				self._chosen_ca = nearest_ca
 
+    def choose_ca(self, history_index = -1):
+        '''Chose a crossing alternative by comparing the accumulated costs. Default to the most recent set of accumulated costs
+        '''
 
-	def vehicleExposure(self, ca):
-		'''Pedestrian vehicle exposure calcualted as the number of vehicles that will pass through crossing during time it takes ped to cross raised
-		to the power of the pedestrian traffic sensitivity parameter.
-		'''
+        # Get the indices of crossing alternatives whose activation is above the threshold value
+        ca_activations = self._ca_activation_history[history_index]
+        dom_threshold = np.nanmean(ca_activations) * self._alpha
+        dominant_indices = np.where( ca_activations > dom_threshold)
 
-		t_cross = self._road_width / self._speed
+        # Select the nearest of these
+        min_dist = sys.float_info.max
+        nearest_ca = None
+        for i in dominant_indices[0]:
+            dom_ca = self._crossing_alternatives[i]
+        
+            if (self.caLoc(dom_ca) < min_dist):
+                min_dist = self.caLoc(dom_ca)
+                nearest_ca = dom_ca
 
-		ve = (t_cross * ca.getVehicleFlow()) ** self._r
 
-		return ve
+        # If nearest dominant ca identified, find distance to this crossing. If within threshold distance choosing this crossing option
+        if nearest_ca is not None:
+            dist_nearest_ca = abs(self._loc - self.caLoc(nearest_ca))
+            if dist_nearest_ca < self._ca_distance_threshold:
+                self._chosen_ca = nearest_ca
 
 
+    def vehicleExposure(self, ca):
+        '''Pedestrian vehicle exposure calcualted as the number of vehicles that will pass through crossing during time it takes ped to cross raised
+        to the power of the pedestrian traffic sensitivity parameter.
+        '''
 
-	def getLoc(self):
-		return self._loc
+        t_cross = self._road_width / self._speed
 
-	def getDestination(self):
-		return self._dest
+        ve = (t_cross * ca.getVehicleFlow()) ** self._r
 
-	def getSpeed(self):
-		return self._speed
+        return ve
 
-	def getActivationHistory(self):
-		return self._ca_activation_history
 
-	def getChosenCA(self):
-		return self._chosen_ca
+
+    def getLoc(self):
+        return self._loc
+
+    def getDestination(self):
+        return self._dest
+
+    def getSpeed(self):
+        return self._speed
+
+    def getActivationHistory(self):
+        return self._ca_activation_history
+
+    def getChosenCA(self):
+        return self._chosen_ca
+
+    @property   
+    def chosenCAType(self):
+        if self.getChosenCA() is None:
+            return None
+        else:
+            return self.getChosenCA().getCrossingType()
+
+
+class CrossingModel(Model):
+
+    def __init__(self, ped_origin, ped_destination, road_length, road_width, alpha, gamma, ped_speed, lam_range, r_range, a_rate_range, n_peds):
+        self.n_peds = n_peds
+        self.schedule = RandomActivation(self)
+        self.running = True
+
+        # Create two crossing alternatives, one a zebra crossing and one mid block crossing
+        zebra_location = road_length * 0.75
+        zebra_wait_time = 0
+        zebra_type = 'zebra'
+        mid_block_wait_time = 3
+        mid_block_type = 'mid_block'
+        vehicle_flow = 1
+        
+        zebra = CrossingAlternative(0, self, location = zebra_location, wait_time = zebra_wait_time, ctype = zebra_type, name = 'z1', vehicle_flow = vehicle_flow)
+        mid_block = CrossingAlternative(1, self, wait_time = mid_block_wait_time, ctype = mid_block_type, name = 'mid1', vehicle_flow = vehicle_flow)
+
+        # Crossing alternatives with salience factors
+        crossing_altertives = [(mid_block, 1), (zebra, 1)]
+
+        # Create population of pedestrian agents
+        lams = np.random.choice(lam_range, n_peds)
+        rs = np.random.choice(r_range, n_peds)
+        a_rates = np.random.choice(a_rate_range, n_peds)
+
+        population_params = zip(lams, rs, a_rates)
+
+        i = 0
+        for l,r,a_rate in population_params:
+            ped = Ped(i, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = alpha, gamma = gamma, lam = l, r = r, a_rate = a_rate)
+            self.schedule.add(ped)
+            i+=1
+
+        self.datacollector = DataCollector(agent_reporters={"CrossingType": "chosenCAType"})
+
+    def step(self):
+        self.datacollector.collect(self)
+        self.schedule.step()
+        if self.schedule.get_agent_count() == 0:
+            self.running = False
