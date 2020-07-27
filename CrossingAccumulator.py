@@ -192,6 +192,7 @@ class Ped(Agent):
             self.walk()
         else:
             # When agent is done remove from schedule
+            self.model.crossing_choice = self.chosenCAType
             self.model.schedule.remove(self)
 
 
@@ -260,7 +261,7 @@ class Ped(Agent):
 
 class CrossingModel(Model):
 
-    def __init__(self, ped_origin, ped_destination, road_length, road_width, alpha, gamma, ped_speed, lam_range, r_range, a_rate_range, n_peds):
+    def __init__(self, ped_origin, ped_destination, road_length, road_width, vehicle_flow, alpha, gamma, ped_speed, lam, r, a_rate, n_peds):
         self.n_peds = n_peds
         self.schedule = RandomActivation(self)
         self.running = True
@@ -271,7 +272,6 @@ class CrossingModel(Model):
         zebra_type = 'zebra'
         mid_block_wait_time = 3
         mid_block_type = 'mid_block'
-        vehicle_flow = 1
         
         zebra = CrossingAlternative(0, self, location = zebra_location, wait_time = zebra_wait_time, ctype = zebra_type, name = 'z1', vehicle_flow = vehicle_flow)
         mid_block = CrossingAlternative(1, self, wait_time = mid_block_wait_time, ctype = mid_block_type, name = 'mid1', vehicle_flow = vehicle_flow)
@@ -280,19 +280,21 @@ class CrossingModel(Model):
         crossing_altertives = [(mid_block, 1), (zebra, 1)]
 
         # Create population of pedestrian agents
+        '''
         lams = np.random.choice(lam_range, n_peds)
         rs = np.random.choice(r_range, n_peds)
         a_rates = np.random.choice(a_rate_range, n_peds)
 
         population_params = zip(lams, rs, a_rates)
+        '''
 
         i = 0
-        for l,r,a_rate in population_params:
-            ped = Ped(i, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = alpha, gamma = gamma, lam = l, r = r, a_rate = a_rate)
-            self.schedule.add(ped)
-            i+=1
+        ped = Ped(i, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = alpha, gamma = gamma, lam = lam, r = r, a_rate = a_rate)
+        self.schedule.add(ped)
 
         self.datacollector = DataCollector(agent_reporters={"CrossingType": "chosenCAType"})
+
+        self.crossing_choice = None
 
     def step(self):
         self.datacollector.collect(self)
