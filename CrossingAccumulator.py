@@ -130,17 +130,14 @@ class Ped(Agent):
         for (i,ca) in enumerate(self._crossing_alternatives):
 
             # Get distance from agent to destination
-            d = self._dest - self._loc
+            d = abs(self._dest - self._loc)
 
             # Get distnaces to and from the ca
             d_to = self.caLoc(ca) - self._loc
             d_from = self._dest - self.caLoc(ca)
 
-            # Compare signs to determine whether ca lies in direction of destination or not. Use this to calculate salience distance
-            if (np.sign(d_to) == 0) | (np.sign(d) == np.sign(d_to)):
-                d_s = d - (abs(d_to) + abs(d_from))
-            else:
-                d_s = d + (abs(d_to) + abs(d_from))
+            # Salience distance is difference between direct distance and distance via crossing
+            d_s = (abs(d_to) + abs(d_from)) - d
 
             # transform salience so that low distances are high salience (because they represent cas closer to ped agent)
             s = (2*self._road_length - d_s) / float(self._road_length)
