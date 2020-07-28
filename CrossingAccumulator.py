@@ -107,21 +107,20 @@ class Ped(Agent):
 
         return ca_loc
 
-    def ca_utility(self, ca):
-        '''Return the utility of the input crossing alternative for this pedestrian
-        '''
-
+    def ca_ww_time(self, ca):
         ca_loc = self.caLoc(ca)
 
         # separate costsing into waiting and walking on road time (no traffic exposure) time
         ww_time = abs(self._loc - ca_loc)/self._speed + abs(ca_loc - self._dest)/self._speed
 
-        # and vehicle exposure when crossing the road
+        return ww_time
+
+    def ca_utility(self, ca):
+        '''Use vehicle exposure as the measure of crossing utility
+        '''
         ve = self.vehicleExposure(ca)
 
-        cost = ww_time * ve
-
-        return np.exp(-1*cost)
+        return np.exp(-self._r*ve)
 
     def ca_saliences(self):
         '''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
@@ -153,7 +152,7 @@ class Ped(Agent):
         ca = np.random.choice(self._crossing_alternatives, p = probs)
         i = np.where(self._crossing_alternatives == ca)[0][0]
 
-        # Get utility of sampled alternative
+        # Get utility of sampled alternative - use a measure of vehicle exposure as utility for activation
         ui = self.ca_utility(self._crossing_alternatives[i])
 
         ca_activations = self._ca_activation_history[-1]
@@ -230,7 +229,7 @@ class Ped(Agent):
 
         t_cross = self._road_width / self._speed
 
-        ve = (t_cross * ca.getVehicleFlow()) ** self._r
+        ve = (t_cross * ca.getVehicleFlow())
 
         return ve
 
