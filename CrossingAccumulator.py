@@ -215,11 +215,9 @@ class Ped(Agent):
                 nearest_ca = dom_ca
 
 
-        # If nearest dominant ca identified, find distance to this crossing. If within threshold distance choosing this crossing option
+        # If nearest dominant ca identified set as chosen option
         if nearest_ca is not None:
-            dist_nearest_ca = abs(self._loc - self.caLoc(nearest_ca))
-            if dist_nearest_ca < self._ca_distance_threshold:
-                self._chosen_ca = nearest_ca
+            self._chosen_ca = nearest_ca
 
 
     def vehicleExposure(self, ca):
