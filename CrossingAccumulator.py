@@ -111,7 +111,7 @@ class Ped(Agent):
         ca_loc = self.caLoc(ca)
 
         # separate costsing into waiting and walking on road time (no traffic exposure) time
-        ww_time = abs(self._loc - ca_loc)*self._speed + ca.getWaitTime() + abs(ca_loc - self._dest)
+        ww_time = abs(self._loc - ca_loc)/self._speed + abs(ca_loc - self._dest)/self._speed
 
         # and vehicle exposure when crossing the road
         ve = self.vehicleExposure(ca)
