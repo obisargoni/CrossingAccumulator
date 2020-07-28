@@ -38,7 +38,10 @@ class CrossingAlternative(Agent):
         return self._ctype
 
     def getVehicleFlow(self):
-        return self._vehicle_flow
+        if self._ctype == 'unmarked':
+            return self._vehicle_flow
+        else:
+            return 0
 
 
 
@@ -268,16 +271,14 @@ class CrossingModel(Model):
 
         # Create two crossing alternatives, one a zebra crossing and one mid block crossing
         zebra_location = road_length * 0.75
-        zebra_wait_time = 0
         zebra_type = 'zebra'
-        mid_block_wait_time = 3
-        mid_block_type = 'mid_block'
+        mid_block_type = 'unmarked'
         
-        zebra = CrossingAlternative(0, self, location = zebra_location, wait_time = zebra_wait_time, ctype = zebra_type, name = 'z1', vehicle_flow = vehicle_flow)
-        mid_block = CrossingAlternative(1, self, wait_time = mid_block_wait_time, ctype = mid_block_type, name = 'mid1', vehicle_flow = vehicle_flow)
+        zebra = CrossingAlternative(0, self, location = zebra_location, ctype = zebra_type, name = 'z1', vehicle_flow = vehicle_flow)
+        unmarked = CrossingAlternative(1, self, ctype = mid_block_type, name = 'mid1', vehicle_flow = vehicle_flow)
 
         # Crossing alternatives with salience factors
-        crossing_altertives = [(mid_block, 1), (zebra, 1)]
+        crossing_altertives = [(unmarked, 1), (zebra, 1)]
 
         # Create population of pedestrian agents
         '''
