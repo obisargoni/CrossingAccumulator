@@ -60,6 +60,9 @@ class Ped(Agent):
     _aw = None # Controls sensitivity to traffic exposure
     _gamma = None # controls the rate at which historic activations decay
 
+    _C = None # Contrast matrix used to compare crossing option costs to get activations
+    _S = None # Matrix used to decay (and possibly compare, though not currently) already accumulated activations
+
     _alpha = None # Proportion of median activation that ca activation must be to be considered dominant
     _acumulator_rate = None
     _chosen_ca = None
@@ -89,6 +92,28 @@ class Ped(Agent):
 
         # At time step 0 accumulated utilities are 0
         self._ca_activation_history = np.array([[np.nan] * len(self._crossing_alternatives)])
+        # Set up matrices used for activation accumulation
+        self.setup_C()
+        self.setup_S()
+
+
+    def setup_C(self):
+        '''Set up matrix used to contrast utilities/costs of different crossing alternatives
+        '''
+        num_cas = len(self._crossing_alternatives)
+        self._C = np.zeros((num_cas, num_cas))
+        for i in range(num_cas):
+            for j in range(num_cas):
+                if i==j:
+                    self._C[i,j] = 1
+                else:
+                    self._C[i,j] = -1/(num_cas-1)
+
+    def setup_S(self):
+        '''Setup matrix used to decay accumulated costs
+        '''
+        num_cas = len(self._crossing_alternatives)
+        self._S = (1-self._gamma) * np.identity(num_cas)
 
 
     def add_crossing_alternative(self, ca, salience_factor = 1):
