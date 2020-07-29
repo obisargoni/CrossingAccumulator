@@ -56,7 +56,7 @@ class Ped(Agent):
     _road_length = None
     _road_width = None
 
-    _lambda = None # Used to control degree of randomness of pedestrian decision
+    _lambda = None # Used to control effect of salience distance on contribution of option utility to activation
     _aw = None # Controls sensitivity to traffic exposure
     _gamma = None # controls the rate at which historic activations decay
 
@@ -202,24 +202,17 @@ class Ped(Agent):
         '''
 
         # Sample crossing alternatives according to their salience
-        probs = scipy.special.softmax(self._lambda * self.ca_saliences())
-        ca = np.random.choice(self._crossing_alternatives, p = probs)
-        i = np.where(self._crossing_alternatives == ca)[0][0]
+        salience_factors = np.exp(-self._lambda * self.ca_salience_distances())
 
-        # Get utility of sampled alternative - use a measure of vehicle exposure as utility for activation
-        ui = self.ca_utility(self._crossing_alternatives[i])
+        # Get utilities of crossing alternatives
+        u = self.ca_utilities()
+
+
 
         ca_activations = self._ca_activation_history[-1]
 
-        # Check if value to update is nan (meaning not updated yet). If it is initialise as zero
-        if np.isnan(ca_activations[i]):
-            ca_activations[i] = 0.0
-
         # Decay accumulated activations
-        ca_activations = ca_activations * self._gamma
-
-        # Accumulate new activation for sampled ca
-        ca_activations[i] += ui
+        ca_activations = np.matmul(self._S, ca_activations) + np.matmul(self._C, salience_factors * u)
 
         self._ca_activation_history = np.append(self._ca_activation_history, [ca_activations], axis = 0)
 
