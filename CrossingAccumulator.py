@@ -78,7 +78,7 @@ class Ped(Agent):
         self._road_width = road_width
 
         self._lambda = lam
-        self._aw = thet # Patameter that controls weight walk time vs crossing exposure in ca utility calculation
+        self._aw = aw # Patameter that controls weight walk time vs crossing exposure in ca utility calculation
         self._acumulator_rate = a_rate
 
         self._alpha = alpha
