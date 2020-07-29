@@ -145,7 +145,8 @@ class Ped(Agent):
     def ca_vehicle_exposures(self):
         '''Get varray of vehicle exposures for all crossing alternatives
         '''
-        return ca_vehicle_exposure(self._crossing_alternatives)
+        v_ve = np.vectorize(self.ca_vehicle_exposure)
+        return v_ve(self._crossing_alternatives)
 
 
     def ca_walk_time(self, ca):
@@ -159,7 +160,8 @@ class Ped(Agent):
     def ca_ww_times(self):
         '''Get array of walking times for each crossing alternative
         '''
-        return ca_walk_time(self._crossing_alternatives)
+        v_ww_times = np.vectorize(self.ca_walk_time)
+        return v_ww_times(self._crossing_alternatives)
 
     def ca_utility(self, ca):
         '''Use vehicle exposure as the measure of crossing utility
@@ -174,7 +176,8 @@ class Ped(Agent):
     def ca_utilities(self):
         '''Get array of utilities for all crossing alternatives
         '''
-        return self.ca_utility(self._crossing_alternatives)
+        v_u = np.vectorize(self.ca_utility)
+        return v_u(self._crossing_alternatives)
 
     def ca_saliences(self):
         '''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
