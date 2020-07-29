@@ -179,10 +179,10 @@ class Ped(Agent):
         v_u = np.vectorize(self.ca_utility)
         return v_u(self._crossing_alternatives)
 
-    def ca_saliences(self):
+    def ca_salience_distances(self):
         '''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
         '''
-        ca_saliences = []
+        ca_salience_distances = []
         for (i,ca) in enumerate(self._crossing_alternatives):
 
             # Get distance from agent to destination
@@ -192,13 +192,10 @@ class Ped(Agent):
             d_to = self.caLoc(ca) - self._loc
             d_from = self._dest - self.caLoc(ca)
 
-            # Salience distance is difference between direct distance and distance via crossing
-            d_s = (abs(d_to) + abs(d_from)) - d
-
-            # transform salience so that low distances are high salience (because they represent cas closer to ped agent)
-            s = (2*self._road_length - d_s) / float(self._road_length)
-            ca_saliences.append(s)
-        return np.array(ca_saliences)
+            # Salience distance is difference between direct distance and distance via crossing, scaled by road length
+            d_s = ((abs(d_to) + abs(d_from)) - d) / self._road_length
+            ca_salience_distances.append(d_s)
+        return np.array(ca_salience_distances)
 
     def accumulate_ca_activation(self):
         '''Sample crossing alternatives based on their costs. From the selected alternative update ped's perception of its costs.
