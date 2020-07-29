@@ -23,7 +23,7 @@ fixed_params = {"road_width": road_width,
                	"ped_origin": ped_start_location,
                	"ped_speed": ped_walking_speed,
                	"alpha" : 1.2,
-               	"gamma" : 0.9,
+               	"gamma" : 0.1,
                	"n_peds" : 1}
 
 variable_params = {	"ped_destination": [road_length, road_length*0.5],
@@ -32,11 +32,11 @@ variable_params = {	"ped_destination": [road_length, road_length*0.5],
 					'a_rate': range(1,3),
 					"vehicle_flow": range(0,5)}
 
-variable_params = {	"ped_destination": [road_length],
-					"lam": [1,10],
-					"r": [0,1,2],
-					'a_rate': [1,5],
-					"vehicle_flow": [0,5]}
+variable_params = {	"ped_destination": [road_length*0.5],
+					"lam": [0.1,1,2],
+					"aw": [0, 0.5, 1],
+					'a_rate': [5],
+					"vehicle_flow": [0,1,5]}
 
 agent_reporters={"CrossingType":"chosenCAType"}
 
