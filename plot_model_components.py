@@ -32,7 +32,7 @@ zebra = CrossingAlternative(0, None, location = zebra_location, ctype = zebra_ty
 unmarked = CrossingAlternative(1, None, ctype = mid_block_type, name = 'mid1', vehicle_flow = 0)
 crossing_altertives = [(unmarked, 1), (zebra, 1)]
 
-ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = road_length/5.0, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = 1, r = 0, a_rate = 1)
+ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = road_length/5.0, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = 1, aw = 0, a_rate = 1)
 
 cols = ['unmarked','zebra', 'loc']
 saliences = np.array([np.append(ped.ca_saliences(), ped._loc)])
@@ -90,13 +90,13 @@ def get_utility_of_crossing_alterantives(ped, crossing_altertives):
 	return utilities
 
 ped0 = Ped(0, None, location = 0, speed = ped_walking_speed, destination = road_length/5.0, 
-			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = 1, r = 0, a_rate = 1)
+			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = 1, aw = 0, a_rate = 1)
 
 ped1 = Ped(0, None, location = 0, speed = ped_walking_speed, destination = road_length/5.0, 
-			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = 1, r = 1, a_rate = 1)
+			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = 1, aw = 1, a_rate = 1)
 
 pedhalf = Ped(0, None, location = 0, speed = ped_walking_speed, destination = road_length/5.0, 
-			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = 1, r = 0.5, a_rate = 1)
+			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = 1, aw = 0.5, a_rate = 1)
 
 zebra = CrossingAlternative(0, None, location = zebra_location, ctype = zebra_type, name = 'z1', vehicle_flow = 0)
 unmarked = CrossingAlternative(1, None, ctype = mid_block_type, name = 'mid1', vehicle_flow = 0)
@@ -127,7 +127,7 @@ for i in range(1,50):
 	utility_r0_v2 = np.append(utility_r0_v2, [ui], axis=0)
 
 
-# Use r=1 ped
+# Use aw=1 ped
 u0 = np.append(get_utility_of_crossing_alterantives(ped1, crossing_altertives), ped1._loc)
 utility_r1_v2 = np.array([u0])
 for i in range(1,50):

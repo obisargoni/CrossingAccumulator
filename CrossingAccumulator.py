@@ -47,28 +47,25 @@ class CrossingAlternative(Agent):
 
 class Ped(Agent):
 
-    _gamma = None # controls the rate at which historic activations decay
-
     _loc = None
     _speed = None # ms-1
     _dest = None
     _crossing_alternatives = None
     _ped_salience_factors = None
 
-    _ca_distance_threshold = 2 # Distance in meters ped must be to ca to choose it or beyond ca to exclude it from further consideration
-
     _road_length = None
     _road_width = None
 
     _lambda = None # Used to control degree of randomness of pedestrian decision
-    _r = None # Controls sensitivity to traffic exposure
+    _aw = None # Controls sensitivity to traffic exposure
+    _gamma = None # controls the rate at which historic activations decay
 
     _alpha = None # Proportion of median activation that ca activation must be to be considered dominant
     _acumulator_rate = None
     _chosen_ca = None
     _ca_activation_history = None
 
-    def __init__(self, unique_id, model, location, speed, destination, crossing_altertives, road_length, road_width, alpha, gamma, lam, r, a_rate):
+    def __init__(self, unique_id, model, location, speed, destination, crossing_altertives, road_length, road_width, alpha, gamma, lam, aw, a_rate):
         super().__init__(unique_id, model)
         self._loc = location
         self._speed = speed
@@ -78,7 +75,7 @@ class Ped(Agent):
         self._road_width = road_width
 
         self._lambda = lam
-        self._r = r
+        self._aw = thet # Patameter that controls weight walk time vs crossing exposure in ca utility calculation
         self._acumulator_rate = a_rate
 
         self._alpha = alpha
@@ -87,8 +84,8 @@ class Ped(Agent):
         self._crossing_alternatives = np.array([])
         self._ped_salience_factors = np.array([])
 
-        for ca, sf in crossing_altertives:
-            self.add_crossing_alternative(ca, salience_factor = sf)
+        for ca in crossing_altertives:
+            self.add_crossing_alternative(ca)
 
         # At time step 0 accumulated utilities are 0
         self._ca_activation_history = np.array([[np.nan] * len(self._crossing_alternatives)])
@@ -107,7 +104,25 @@ class Ped(Agent):
 
         return ca_loc
 
-    def ca_ww_time(self, ca):
+
+    def ca_vehicle_exposure(self, ca):
+        '''Pedestrian vehicle exposure calcualted as the number of vehicles that will pass through crossing during time it takes ped to cross raised
+        to the power of the pedestrian traffic sensitivity parameter.
+        '''
+
+        t_cross = self._road_width / self._speed
+
+        ve = (t_cross * ca.getVehicleFlow())
+
+        return ve
+
+    def ca_vehicle_exposures(self):
+        '''Get varray of vehicle exposures for all crossing alternatives
+        '''
+        return ca_vehicle_exposure(self._crossing_alternatives)
+
+
+    def ca_walk_time(self, ca):
         ca_loc = self.caLoc(ca)
 
         # separate costsing into waiting and walking on road time (no traffic exposure) time
@@ -115,12 +130,25 @@ class Ped(Agent):
 
         return ww_time
 
+    def ca_ww_times(self):
+        '''Get array of walking times for each crossing alternative
+        '''
+        return ca_walk_time(self._crossing_alternatives)
+
     def ca_utility(self, ca):
         '''Use vehicle exposure as the measure of crossing utility
         '''
-        ve = self.vehicleExposure(ca)
 
-        return np.exp(-self._r*ve)
+        # aw gives weight of walk time attribute, 1-aw gives weight of vehicle exposure attribute
+        weights = np.array([self._aw, 1-self._aw])
+        ca_utility_parts = -1*np.array([self.ca_walk_time(ca), self.ca_vehicle_exposure(ca)]) # Multiply by -1 to go from costs to utility
+
+        return np.dot(weights, ca_utility_parts)
+
+    def ca_utilities(self):
+        '''Get array of utilities for all crossing alternatives
+        '''
+        return self.ca_utility(self._crossing_alternatives)
 
     def ca_saliences(self):
         '''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
@@ -220,19 +248,6 @@ class Ped(Agent):
             self._chosen_ca = nearest_ca
 
 
-    def vehicleExposure(self, ca):
-        '''Pedestrian vehicle exposure calcualted as the number of vehicles that will pass through crossing during time it takes ped to cross raised
-        to the power of the pedestrian traffic sensitivity parameter.
-        '''
-
-        t_cross = self._road_width / self._speed
-
-        ve = (t_cross * ca.getVehicleFlow())
-
-        return ve
-
-
-
     def getLoc(self):
         return self._loc
 
@@ -258,7 +273,7 @@ class Ped(Agent):
 
 class CrossingModel(Model):
 
-    def __init__(self, ped_origin, ped_destination, road_length, road_width, vehicle_flow, alpha, gamma, ped_speed, lam, r, a_rate, n_peds):
+    def __init__(self, ped_origin, ped_destination, road_length, road_width, vehicle_flow, alpha, gamma, ped_speed, lam, aw, a_rate, n_peds):
         self.n_peds = n_peds
         self.schedule = RandomActivation(self)
         self.running = True
@@ -272,7 +287,7 @@ class CrossingModel(Model):
         unmarked = CrossingAlternative(1, self, ctype = mid_block_type, name = 'mid1', vehicle_flow = vehicle_flow)
 
         # Crossing alternatives with salience factors
-        crossing_altertives = [(unmarked, 1), (zebra, 1)]
+        crossing_altertives = np.array([unmarked,zebra])
 
         # Create population of pedestrian agents
         '''
@@ -284,7 +299,7 @@ class CrossingModel(Model):
         '''
 
         i = 0
-        ped = Ped(i, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = alpha, gamma = gamma, lam = lam, r = r, a_rate = a_rate)
+        ped = Ped(i, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = alpha, gamma = gamma, lam = lam, aw = aw, a_rate = a_rate)
         self.schedule.add(ped)
 
         self.datacollector = DataCollector(agent_reporters={"CrossingType": "chosenCAType"})
