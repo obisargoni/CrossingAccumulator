@@ -91,7 +91,8 @@ class Ped(Agent):
             self.add_crossing_alternative(ca)
 
         # At time step 0 accumulated utilities are 0
-        self._ca_activation_history = np.array([[np.nan] * len(self._crossing_alternatives)])
+        self._ca_activation_history = np.array([[0] * len(self._crossing_alternatives)])
+
         # Set up matrices used for activation accumulation
         self.setup_C()
         self.setup_S()
