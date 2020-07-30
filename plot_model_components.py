@@ -202,23 +202,28 @@ u0 = np.append(get_utility_costs_of_crossing_alterantives(ped0), ped0._loc)
 utility_r0_v0 = np.array([u0])
 for i in range(1,50):
 	ped0._loc += 1
+	ped0.accumulate_ca_activation()
 	ui = np.append(get_utility_costs_of_crossing_alterantives(ped0), ped0._loc)
 	utility_r0_v0 = np.append(utility_r0_v0, [ui], axis=0)
 
+df_a_r0_v0 = pd.DataFrame(columns = ['unmarked','zebra'], data = ped0.getActivationHistory())
 
 # Increase vehcile flow
 zebra._vehicle_flow = 2
 unmarked._vehicle_flow = 2
 ped0._loc = 0
 ped0._crossing_alternatives = crossing_altertives
+ped0._ca_activation_history = np.array([[0] * len(ped0._crossing_alternatives)])
 
 u0 = np.append(get_utility_costs_of_crossing_alterantives(ped0), ped0._loc)
 utility_r0_v2 = np.array([u0])
 for i in range(1,50):
 	ped0._loc += 1
+	ped0.accumulate_ca_activation()
 	ui = np.append(get_utility_costs_of_crossing_alterantives(ped0), ped0._loc)
 	utility_r0_v2 = np.append(utility_r0_v2, [ui], axis=0)
 
+df_a_r0_v2 = pd.DataFrame(columns = ['unmarked','zebra'], data = ped0.getActivationHistory())
 
 # Use aw=1 ped
 ped1._crossing_alternatives = crossing_altertives
@@ -226,6 +231,7 @@ u0 = np.append(get_utility_costs_of_crossing_alterantives(ped1), ped1._loc)
 utility_r1_v2 = np.array([u0])
 for i in range(1,50):
 	ped1._loc += 1
+	ped1.accumulate_ca_activation()
 	ui = np.append(get_utility_costs_of_crossing_alterantives(ped1), ped1._loc)
 	utility_r1_v2 = np.append(utility_r1_v2, [ui], axis=0)
 
@@ -235,6 +241,7 @@ u0 = np.append(get_utility_costs_of_crossing_alterantives(pedhalf), pedhalf._loc
 utility_rh_v2 = np.array([u0])
 for i in range(1,50):
 	pedhalf._loc += 1
+	pedhalf.accumulate_ca_activation()
 	ui = np.append(get_utility_costs_of_crossing_alterantives(pedhalf), pedhalf._loc)
 	utility_rh_v2 = np.append(utility_rh_v2, [ui], axis=0)
 
@@ -243,15 +250,29 @@ df_u_r0_v2 = pd.DataFrame(columns = utility_costs_cols, data = utility_r0_v2)
 df_u_r1_v2 = pd.DataFrame(columns = utility_costs_cols, data = utility_r1_v2)
 df_u_rh_v2 = pd.DataFrame(columns = utility_costs_cols, data = utility_rh_v2)
 
-
 # Plot the different utility curves
 fig_u_r0_v0 = plot_utilities_and_costs(df_u_r0_v0, utility_costs_cols[:-1], 'Utility + Costs', " aw:{}, v:{}".format(0,0), dict_markers =dict_markers)
 fig_u_r0_v2 = plot_utilities_and_costs(df_u_r0_v2, utility_costs_cols[:-1], 'Utility + Costs', " aw:{}, v:{}".format(0,2), dict_markers =dict_markers)
 fig_u_r1_v2 = plot_utilities_and_costs(df_u_r1_v2, utility_costs_cols[:-1], 'Utility + Costs', " aw:{}, v:{}".format(1,2), dict_markers =dict_markers)
 fig_u_rh_v2 = plot_utilities_and_costs(df_u_rh_v2, utility_costs_cols[:-1], 'Utility + Costs', " aw:{}, v:{}".format(0.5,2), dict_markers =dict_markers)
 
-
 fig_u_r0_v0.show()
 fig_u_r0_v2.show()
 fig_u_r1_v2.show()
 fig_u_rh_v2.show()
+
+
+# Plot the activation histories for each ped
+df_a_r1_v2 = pd.DataFrame(columns = ['unmarked','zebra'], data = ped1.getActivationHistory())
+df_a_rh_v2 = pd.DataFrame(columns = ['unmarked','zebra'], data = pedhalf.getActivationHistory())
+
+
+fig_a_r0_v0 = plot_two_series(df_a_r0_v0, 'unmarked', 'zebra', 'unmarked', 'zebra', 'Activations', title_suffix = " aw:{}, v:{}".format(0,0), dict_markers = dict_markers)
+fig_a_r0_v2 = plot_two_series(df_a_r0_v2, 'unmarked', 'zebra', 'unmarked', 'zebra', 'Activations', title_suffix = " aw:{}, v:{}".format(0,2), dict_markers = dict_markers)
+fig_a_r1_v2 = plot_two_series(df_a_r1_v2, 'unmarked', 'zebra', 'unmarked', 'zebra', 'Activations', title_suffix = " aw:{}, v:{}".format(1,2), dict_markers = dict_markers)
+fig_a_rh_v2 = plot_two_series(df_a_rh_v2, 'unmarked', 'zebra', 'unmarked', 'zebra', 'Activations', title_suffix = " aw:{}, v:{}".format(0.5,2), dict_markers = dict_markers)
+
+fig_a_r0_v0.show()
+fig_a_r0_v2.show()
+fig_a_r1_v2.show()
+fig_a_rh_v2.show()
