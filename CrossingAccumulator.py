@@ -43,6 +43,15 @@ class CrossingAlternative(Agent):
         else:
             return 0
 
+    def getVehicleFlow(self, t):
+        if self._ctype == 'unmarked':
+            if isinstance(self._vehicle_flow, int):
+                return self._vehicle_flow
+            else:
+                return self._vehicle_flow[t]
+        else:
+            return 0
+
 
 
 class Ped(Agent):
