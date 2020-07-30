@@ -183,7 +183,24 @@ class Ped(Agent):
         '''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
         '''
         ca_salience_distances = []
-        for (i,ca) in enumerate(self._crossing_alternatives):
+        for i,ca in enumerate(self._crossing_alternatives):
+            # Get distance from agent to destination
+            d = abs(self._dest - self._loc)
+
+            # Get distnaces to and from the ca
+            d_to = self.caLoc(ca) - self._loc
+            d_from = self._dest - self.caLoc(ca)
+
+            # Salience distance is difference between direct distance and distance via crossing, scaled by road length
+            d_s = (abs(d_to) + abs(d_from) - d) / self._road_length
+            ca_salience_distances.append(d_s)
+        return np.array(ca_salience_distances)
+
+    def ca_salience_distances_softmax(self):
+        '''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
+        '''
+        ca_salience_distances = []
+        for i,ca in enumerate(self._crossing_alternatives):
 
             # Get distance from agent to destination
             d = abs(self._dest - self._loc)
@@ -193,21 +210,27 @@ class Ped(Agent):
             d_from = self._dest - self.caLoc(ca)
 
             # Salience distance is difference between direct distance and distance via crossing, scaled by road length
-            d_s = ((abs(d_to) + abs(d_from)) - d) / self._road_length
+            d_s = (2*self._road_length - (abs(d_to) + abs(d_from) - d)) / self._road_length
             ca_salience_distances.append(d_s)
         return np.array(ca_salience_distances)
+
+    def ca_salience_factors(self):
+        '''Get the factors to scale utilities by
+        '''
+        return np.exp(-self._lambda * self.ca_salience_distances())
+
+    def ca_salience_factors_softmax(self):
+        return scipy.special.softmax(self._lambda * self.ca_salience_distances_softmax())
 
     def accumulate_ca_activation(self):
         '''Sample crossing alternatives based on their costs. From the selected alternative update ped's perception of its costs.
         '''
 
         # Sample crossing alternatives according to their salience
-        salience_factors = np.exp(-self._lambda * self.ca_salience_distances())
+        salience_factors = self.ca_salience_factors_softmax()
 
         # Get utilities of crossing alternatives
         u = self.ca_utilities()
-
-
 
         ca_activations = self._ca_activation_history[-1]
 
