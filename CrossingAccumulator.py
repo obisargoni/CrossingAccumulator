@@ -169,7 +169,7 @@ class Ped(Agent):
 
         return ww_time
 
-    def ca_ww_times(self):
+    def ca_walk_times(self):
         '''Get array of walking times for each crossing alternative
         '''
         v_ww_times = np.vectorize(self.ca_walk_time)
