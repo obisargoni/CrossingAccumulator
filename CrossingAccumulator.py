@@ -175,6 +175,9 @@ class Ped(Agent):
         v_ww_times = np.vectorize(self.ca_walk_time)
         return v_ww_times(self._crossing_alternatives)
 
+    def ca_costs(self):
+        return np.concatenate((self.ca_walk_times(), self.ca_vehicle_exposures()))
+
     def ca_utility(self, ca):
         '''Use vehicle exposure as the measure of crossing utility
         '''
