@@ -93,13 +93,13 @@ def plot_utilities_and_costs(df, cols, title, title_suffix, dict_markers = None)
 
 	fig.gca().set_title(title+title_suffix)
 
-	colours = ['black', 'blue', 'red']
+	linestyles = ['-', '--', ':']
 
 	# Plot pairs of utilities and costs (for each crossing alternative)
 	for i in range(0, len(cols), 2):
-		c = colours[i//2]
-		ax = df[cols[i]].plot(color=c, linestyle = '-', label=cols[i])
-		ax = df[cols[i+1]].plot(color=c, linestyle = '--', secondary_y=False, label=cols[i+1])
+		l = linestyles[i//2]
+		ax = df[cols[i]].plot(color='blue', linestyle = l, label=cols[i])
+		ax = df[cols[i+1]].plot(color='red', linestyle = l, secondary_y=False, label=cols[i+1])
 
 	h1, l1 = ax.get_legend_handles_labels()
 	#h2, l2 = ax2.get_legend_handles_labels()
