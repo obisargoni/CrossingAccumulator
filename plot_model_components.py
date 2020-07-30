@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 import pandas as pd
 import scipy.special
@@ -18,58 +19,156 @@ mid_block_type = 'unmarked'
 
 ped_start_location = 0
 ped_walking_speed = 3
-lam = 10
+gamma = 0.1
+lam = 0.1
+
 
 
 ##################################
 #
 #
-# Salience and sampling probability
+# Functions
+#
+#
+##################################
+
+def ped_salience_distance_and_factors(ped, n_steps, softmax = False):
+	cols = ['unmarked','zebra', 'loc']
+
+	if softmax==False:
+		salience_distances = np.array([np.append(ped.ca_salience_distances(), ped._loc)])
+		s_factors = np.array([np.append(ped.ca_salience_factors(),ped._loc)])
+	else:
+		salience_distances = np.array([np.append(ped.ca_salience_distances_softmax(), ped._loc)])
+		s_factors = np.array([np.append(ped.ca_salience_factors_softmax(),ped._loc)])
+
+	for i in range(1, n_steps):
+		ped._loc += 1
+
+		if softmax == False:
+			salience_i = np.append(ped.ca_salience_distances(), ped._loc)
+			sf_i = np.append(ped.ca_salience_factors(), ped._loc)
+		else:
+			salience_i = np.append(ped.ca_salience_distances_softmax(), ped._loc)
+			sf_i = np.append(ped.ca_salience_factors_softmax(), ped._loc)			
+
+		salience_distances = np.append(salience_distances, [salience_i], axis=0)
+		s_factors = np.append(s_factors, [sf_i], axis=0)
+	
+	df_sd = pd.DataFrame(columns = cols, data = salience_distances)
+	df_sf = pd.DataFrame(columns = cols, data = s_factors)
+	
+	return {'salience_distances':df_sd, 'salience_factors':df_sf}
+
+def get_utility_costs_of_crossing_alterantives(ped):
+	utilities = ped.ca_utilities()
+	wt_costs = ped.ca_ww_times()
+	ve_costs = ped.ca_vehicle_exposures()
+
+	return np.concatenate((utilities, wt_costs, ve_costs))
+
+
+def plot_two_series(df, series_a, series_b, label_a, label_b, title, title_suffix = '', dict_markers = None):
+
+	fig = plt.figure(figsize=(12,5))
+
+	fig.gca().set_title(title+title_suffix)
+
+	ax = df[series_a].plot(color='blue', label=series_a)
+	ax = df[series_b].plot(color='red', secondary_y=False, label=series_b)
+
+	h1, l1 = ax.get_legend_handles_labels()
+	#h2, l2 = ax2.get_legend_handles_labels()
+
+	# Add marker for positions of zebra crossing and destination
+	for k,v in dict_markers.items():
+		plt.axvline(v, linestyle = '--', linewidth = 0.5)
+		plt.annotate(k, (v, ax.get_ylim()[1]))
+
+	fig.legend(h1,l1,loc=2)
+	return fig
+
+def plot_utilities_and_costs(df, cols, title, title_suffix, dict_markers = None):
+	fig = plt.figure(figsize=(12,5))
+
+	fig.gca().set_title(title+title_suffix)
+
+	colours = ['black', 'blue', 'red']
+
+	# Plot pairs of utilities and costs (for each crossing alternative)
+	for i in range(0, len(cols), 2):
+		c = colours[i//2]
+		ax = df[cols[i]].plot(color=c, linestyle = '-', label=cols[i])
+		ax = df[cols[i+1]].plot(color=c, linestyle = '--', secondary_y=False, label=cols[i+1])
+
+	h1, l1 = ax.get_legend_handles_labels()
+	#h2, l2 = ax2.get_legend_handles_labels()
+
+	# Add marker for positions of zebra crossing and destination
+	for k,v in dict_markers.items():
+		plt.axvline(v, linestyle = '--', linewidth = 0.5, color = 'grey')
+		plt.annotate(k, (v, ax.get_ylim()[1]))
+
+	fig.legend(h1,l1,loc=2)
+	return fig
+
+##################################
+#
+#
+# Salience distance and salience factors
 #
 #
 ##################################
 zebra = CrossingAlternative(0, None, location = zebra_location, ctype = zebra_type, name = 'z1', vehicle_flow = 0)
 unmarked = CrossingAlternative(1, None, ctype = mid_block_type, name = 'mid1', vehicle_flow = 0)
-crossing_altertives = [(unmarked, 1), (zebra, 1)]
+crossing_altertives = [unmarked, zebra]
 
-ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = road_length/5.0, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = 1, aw = 0, a_rate = 1)
+lam = 0.1
+dest = road_length/5.0
+dict_markers = {'destination':dest, 'zebra':zebra_location}
 
-cols = ['unmarked','zebra', 'loc']
-saliences = np.array([np.append(ped.ca_saliences(), ped._loc)])
-probs = np.array([np.append(scipy.special.softmax(lam * ped.ca_saliences()),ped._loc)])
-for i in range(1, 50):
-	ped._loc += 1
-	salience_i = np.append(ped.ca_saliences(), ped._loc)
-	probs_i = np.append(scipy.special.softmax(lam * salience_i[:-1]), ped._loc)
+ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.1, lam = lam, aw = 0.5, a_rate = 1)
 
-	saliences = np.append(saliences, [salience_i], axis=0)
-	probs = np.append(probs, [probs_i], axis=0)
+dict_data = ped_salience_distance_and_factors(ped, 50)
 
-
-# Now plot
-df_salience = pd.DataFrame(columns = cols, data = saliences)
-df_probs = pd.DataFrame(columns = cols, data = probs)
-
-def plot_two_series(df, series_a, series_b, label_a, label_b, title):
-
-	fig = plt.figure(figsize=(12,5))
-
-	fig.gca().set_title(title)
-
-	ax1 = df[series_a].plot(color='blue', label=series_a)
-	ax2 = df[series_b].plot(color='red', secondary_y=False, label=series_b)
-
-	h1, l1 = ax1.get_legend_handles_labels()
-	h2, l2 = ax2.get_legend_handles_labels()
-
-	fig.legend(h1+h2, l1+l2, loc=2)
-	return fig
-
-fig_salience = plot_two_series(df_salience, 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Crossing Saliences')
-fig_probs = plot_two_series(df_probs, 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Sampling Probability')
+title_suffix = " lam:{}".format(lam)
+fig_salience = plot_two_series(dict_data['salience_distances'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Distances',title_suffix = title_suffix, dict_markers = dict_markers)
+fig_probs = plot_two_series(dict_data['salience_factors'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Factor',title_suffix = title_suffix, dict_markers = dict_markers)
 
 fig_salience.show()
 fig_probs.show()
+
+
+# try with different lambda value
+
+lam = 1
+
+ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.1, lam = lam, aw = 0.5, a_rate = 1)
+
+dict_data = ped_salience_distance_and_factors(ped, 50)
+
+title_suffix = " lam:{}".format(lam)
+fig_salience = plot_two_series(dict_data['salience_distances'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Distances', title_suffix=title_suffix, dict_markers = dict_markers)
+fig_probs = plot_two_series(dict_data['salience_factors'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Factor', title_suffix=title_suffix, dict_markers = dict_markers)
+
+fig_salience.show()
+fig_probs.show()
+
+
+# Try with different salience factor calculation (softmax)
+lam = 1
+
+ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.1, lam = lam, aw = 0.5, a_rate = 1)
+
+dict_data = ped_salience_distance_and_factors(ped, 50, softmax = True)
+
+title_suffix = " softmax, lam:{}".format(lam)
+fig_salience = plot_two_series(dict_data['salience_distances'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Distances', title_suffix=title_suffix, dict_markers = dict_markers)
+fig_probs = plot_two_series(dict_data['salience_factors'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Factor', title_suffix=title_suffix, dict_markers = dict_markers)
+
+fig_salience.show()
+fig_probs.show()
+
 
 
 #####################################
@@ -79,38 +178,31 @@ fig_probs.show()
 #
 #
 #####################################
-
-def get_utility_of_crossing_alterantives(ped, crossing_altertives):
-	utilities = np.zeros(len(crossing_altertives))
-
-	for i, (ca, sf) in enumerate(crossing_altertives):
-		ui = ped.ca_utility(ca)
-		utilities[i] = ui
-
-	return utilities
+ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, 
+			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = gamma, lam = lam, aw = 0.5, a_rate = 1)
 
 ped0 = Ped(0, None, location = 0, speed = ped_walking_speed, destination = road_length/5.0, 
-			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = 1, aw = 0, a_rate = 1)
+			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = gamma, lam = lam, aw = 0, a_rate = 1)
 
 ped1 = Ped(0, None, location = 0, speed = ped_walking_speed, destination = road_length/5.0, 
-			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = 1, aw = 1, a_rate = 1)
+			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = gamma, lam = lam, aw = 1, a_rate = 1)
 
 pedhalf = Ped(0, None, location = 0, speed = ped_walking_speed, destination = road_length/5.0, 
-			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = 1, aw = 0.5, a_rate = 1)
+			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = gamma, lam = lam, aw = 0.5, a_rate = 1)
 
 zebra = CrossingAlternative(0, None, location = zebra_location, ctype = zebra_type, name = 'z1', vehicle_flow = 0)
 unmarked = CrossingAlternative(1, None, ctype = mid_block_type, name = 'mid1', vehicle_flow = 0)
 
-crossing_altertives = [(unmarked, 1), (zebra, 1)]
+crossing_altertives = [unmarked, zebra]
 
-utility_cols = ['unmarked_u','zebra_u', 'loc']
+utility_costs_cols = ['unmarked_u','zebra_u', 'unmarked_wt', 'zebra_wt', 'unmarked_ve', 'zebra_ve', 'loc']
 
 # Get utility for 0 vehicle flow and compare to costs for 5 vehicle flow
-u0 = np.append(get_utility_of_crossing_alterantives(ped0, crossing_altertives), ped0._loc)
+u0 = np.append(get_utility_costs_of_crossing_alterantives(ped0), ped0._loc)
 utility_r0_v0 = np.array([u0])
 for i in range(1,50):
 	ped0._loc += 1
-	ui = np.append(get_utility_of_crossing_alterantives(ped0, crossing_altertives), ped0._loc)
+	ui = np.append(get_utility_costs_of_crossing_alterantives(ped0), ped0._loc)
 	utility_r0_v0 = np.append(utility_r0_v0, [ui], axis=0)
 
 
@@ -118,38 +210,48 @@ for i in range(1,50):
 zebra._vehicle_flow = 2
 unmarked._vehicle_flow = 2
 ped0._loc = 0
+ped0._crossing_alternatives = crossing_altertives
 
-u0 = np.append(get_utility_of_crossing_alterantives(ped0, crossing_altertives), ped0._loc)
+u0 = np.append(get_utility_costs_of_crossing_alterantives(ped0), ped0._loc)
 utility_r0_v2 = np.array([u0])
 for i in range(1,50):
 	ped0._loc += 1
-	ui = np.append(get_utility_of_crossing_alterantives(ped0, crossing_altertives), ped0._loc)
+	ui = np.append(get_utility_costs_of_crossing_alterantives(ped0), ped0._loc)
 	utility_r0_v2 = np.append(utility_r0_v2, [ui], axis=0)
 
 
 # Use aw=1 ped
-u0 = np.append(get_utility_of_crossing_alterantives(ped1, crossing_altertives), ped1._loc)
+ped1._crossing_alternatives = crossing_altertives
+u0 = np.append(get_utility_costs_of_crossing_alterantives(ped1), ped1._loc)
 utility_r1_v2 = np.array([u0])
 for i in range(1,50):
 	ped1._loc += 1
-	ui = np.append(get_utility_of_crossing_alterantives(ped1, crossing_altertives), ped1._loc)
+	ui = np.append(get_utility_costs_of_crossing_alterantives(ped1), ped1._loc)
 	utility_r1_v2 = np.append(utility_r1_v2, [ui], axis=0)
 
-u0 = np.append(get_utility_of_crossing_alterantives(pedhalf, crossing_altertives), pedhalf._loc)
+# use half ped
+pedhalf._crossing_alternatives = crossing_altertives
+u0 = np.append(get_utility_costs_of_crossing_alterantives(pedhalf), pedhalf._loc)
 utility_rh_v2 = np.array([u0])
 for i in range(1,50):
 	pedhalf._loc += 1
-	ui = np.append(get_utility_of_crossing_alterantives(pedhalf, crossing_altertives), pedhalf._loc)
+	ui = np.append(get_utility_costs_of_crossing_alterantives(pedhalf), pedhalf._loc)
 	utility_rh_v2 = np.append(utility_rh_v2, [ui], axis=0)
 
-df_u_r0_v0 = pd.DataFrame(columns = utility_cols, data = utility_r0_v0)
-df_u_r0_v2 = pd.DataFrame(columns = utility_cols, data = utility_r0_v2)
-df_u_r1_v2 = pd.DataFrame(columns = utility_cols, data = utility_r1_v2)
-df_u_rh_v2 = pd.DataFrame(columns = utility_cols, data = utility_rh_v2)
+df_u_r0_v0 = pd.DataFrame(columns = utility_costs_cols, data = utility_r0_v0)
+df_u_r0_v2 = pd.DataFrame(columns = utility_costs_cols, data = utility_r0_v2)
+df_u_r1_v2 = pd.DataFrame(columns = utility_costs_cols, data = utility_r1_v2)
+df_u_rh_v2 = pd.DataFrame(columns = utility_costs_cols, data = utility_rh_v2)
 
 
 # Plot the different utility curves
-fig_u_r0_v0 = plot_two_series(df_u_r0_v0, 'unmarked_u', 'zebra_u', 'unmarked crossing', 'zebra crossing', 'Crossing Utilities')
-fig_u_r0_v2 = plot_two_series(df_u_r0_v2, 'unmarked_u', 'zebra_u', 'unmarked crossing', 'zebra crossing', 'Crossing Utilities')
-fig_u_r1_v2 = plot_two_series(df_u_r1_v2, 'unmarked_u', 'zebra_u', 'unmarked crossing', 'zebra crossing', 'Crossing Utilities')
-fig_u_rh_v2 = plot_two_series(df_u_rh_v2, 'unmarked_u', 'zebra_u', 'unmarked crossing', 'zebra crossing', 'Crossing Utilities')
+fig_u_r0_v0 = plot_utilities_and_costs(df_u_r0_v0, utility_costs_cols[:-1], 'Utility + Costs', " aw:{}, v:{}".format(0,0), dict_markers =dict_markers)
+fig_u_r0_v2 = plot_utilities_and_costs(df_u_r0_v2, utility_costs_cols[:-1], 'Utility + Costs', " aw:{}, v:{}".format(0,2), dict_markers =dict_markers)
+fig_u_r1_v2 = plot_utilities_and_costs(df_u_r1_v2, utility_costs_cols[:-1], 'Utility + Costs', " aw:{}, v:{}".format(1,2), dict_markers =dict_markers)
+fig_u_rh_v2 = plot_utilities_and_costs(df_u_rh_v2, utility_costs_cols[:-1], 'Utility + Costs', " aw:{}, v:{}".format(0.5,2), dict_markers =dict_markers)
+
+
+fig_u_r0_v0.show()
+fig_u_r0_v2.show()
+fig_u_r1_v2.show()
+fig_u_rh_v2.show()
