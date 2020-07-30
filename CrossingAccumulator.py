@@ -147,7 +147,10 @@ class Ped(Agent):
 
         t_cross = self._road_width / self._speed
 
-        ve = (t_cross * ca.getVehicleFlow())
+        # use peds location as a proxy for time
+        t = int(self._loc) % self._road_length
+
+        ve = (t_cross * ca.getVehicleFlow(t))
 
         return ve
 
