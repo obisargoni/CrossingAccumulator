@@ -308,6 +308,7 @@ class Ped(Agent):
         # If nearest dominant ca identified set as chosen option
         if nearest_ca is not None:
             self._chosen_ca = nearest_ca
+            self.model.choice_step = self.model.nsteps
 
 
     def getLoc(self):
@@ -334,11 +335,10 @@ class Ped(Agent):
 
 
 class CrossingModel(Model):
-
-    def __init__(self, ped_origin, ped_destination, road_length, road_width, vehicle_flow, alpha, gamma, ped_speed, lam, aw, a_rate, n_peds):
-        self.n_peds = n_peds
+    def __init__(self, ped_origin, ped_destination, road_length, road_width, vehicle_flow, alpha, gamma, ped_speed, lam, aw, a_rate):
         self.schedule = RandomActivation(self)
         self.running = True
+        self.nsteps = 0
 
         # Create two crossing alternatives, one a zebra crossing and one mid block crossing
         zebra_location = road_length * 0.75
@@ -351,24 +351,17 @@ class CrossingModel(Model):
         # Crossing alternatives with salience factors
         crossing_altertives = np.array([unmarked,zebra])
 
-        # Create population of pedestrian agents
-        '''
-        lams = np.random.choice(lam_range, n_peds)
-        rs = np.random.choice(r_range, n_peds)
-        a_rates = np.random.choice(a_rate_range, n_peds)
-
-        population_params = zip(lams, rs, a_rates)
-        '''
-
         i = 0
-        ped = Ped(i, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = alpha, gamma = gamma, lam = lam, aw = aw, a_rate = a_rate)
-        self.schedule.add(ped)
+        self.ped = Ped(i, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = alpha, gamma = gamma, lam = lam, aw = aw, a_rate = a_rate)
+        self.schedule.add(self.ped)
 
         self.datacollector = DataCollector(agent_reporters={"CrossingType": "chosenCAType"})
 
         self.crossing_choice = None
+        self.choice_step = None
 
     def step(self):
+        self.nsteps += 1
         self.datacollector.collect(self)
         self.schedule.step()
         if self.schedule.get_agent_count() == 0:
