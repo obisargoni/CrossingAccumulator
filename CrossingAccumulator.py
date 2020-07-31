@@ -125,7 +125,7 @@ class Ped(Agent):
         '''Setup matrix used to decay accumulated costs
         '''
         num_cas = len(self._crossing_alternatives)
-        self._S = (1-self._gamma) * np.identity(num_cas)
+        self._S = (self._gamma) * np.identity(num_cas)
 
 
     def add_crossing_alternative(self, ca, salience_factor = 1):

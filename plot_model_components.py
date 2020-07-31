@@ -19,7 +19,7 @@ mid_block_type = 'unmarked'
 
 ped_start_location = 0
 ped_walking_speed = 3
-gamma = 0.1
+gamma = 0.9
 lam = 0.1
 
 
@@ -127,7 +127,7 @@ lam = 0.1
 dest = road_length/5.0
 dict_markers = {'destination':dest, 'zebra':zebra_location}
 
-ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.1, lam = lam, aw = 0.5, a_rate = 1)
+ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = lam, aw = 0.5, a_rate = 1)
 
 dict_data = ped_salience_distance_and_factors(ped, 50)
 
@@ -143,7 +143,7 @@ fig_probs.show()
 
 lam = 1
 
-ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.1, lam = lam, aw = 0.5, a_rate = 1)
+ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = lam, aw = 0.5, a_rate = 1)
 
 dict_data = ped_salience_distance_and_factors(ped, 50)
 
@@ -158,7 +158,7 @@ fig_probs.show()
 # Try with different salience factor calculation (softmax)
 lam = 1
 
-ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.1, lam = lam, aw = 0.5, a_rate = 1)
+ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = lam, aw = 0.5, a_rate = 1)
 
 dict_data = ped_salience_distance_and_factors(ped, 50, softmax = True)
 

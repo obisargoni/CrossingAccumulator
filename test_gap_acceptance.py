@@ -107,7 +107,7 @@ mid_block_type = 'unmarked'
 ped_start_location = 0
 dest = road_length/5
 ped_walking_speed = 3
-gamma = 0.1
+gamma = 0.9
 
 ped_cost_cols = ['unmarked_wt', 'zebra_wt', 'unmarked_ve','zebra_ve']
 ped_utility_cols = ['unmarked_u','zebra_u']
