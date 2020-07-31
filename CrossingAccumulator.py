@@ -256,6 +256,38 @@ class Ped(Agent):
 
         self._ca_activation_history = np.append(self._ca_activation_history, [ca_activations], axis = 0)
 
+    def accumulate_ca_activation_sampling(self):
+        '''Sample crossing alternatives based on their costs. From the selected alternative update ped's perception of its costs.
+        '''
+
+        # Sample crossing alternatives according to their salience
+        salience_factors = self.ca_salience_factors_softmax()
+
+        ca = np.random.choice(self._crossing_alternatives, p = salience_factors)
+        i = np.where(self._crossing_alternatives == ca)[0][0]
+
+        # Get utility of sampled alternative - use a measure of vehicle exposure as utility for activation
+        ui = self.ca_utility(self._crossing_alternatives[i])
+
+        # Calculate activation by doing max cost + ui (since ui = -costs this gives difference between maximum costs and cost of this ca)
+        weights = np.array([self._aw, 1-self._aw])
+        max_costs = np.dot(weights, np.array([(2*self._road_length / self._speed), 20])) # 20 represents maximum vehicle exposure for this road
+        ca_act = max_costs + ui
+
+        ca_activations = self._ca_activation_history[-1]
+
+        # Check if value to update is nan (meaning not updated yet). If it is initialise as zero
+        if np.isnan(ca_activations[i]):
+            ca_activations[i] = 0.0
+
+        # Decay accumulated activations
+        ca_activations = ca_activations * self._gamma
+
+        # Accumulate new activation for sampled ca
+        ca_activations[i] += ca_act
+
+        self._ca_activation_history = np.append(self._ca_activation_history, [ca_activations], axis = 0)
+
 
     def walk(self):
         self._loc += self._speed
