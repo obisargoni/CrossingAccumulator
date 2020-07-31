@@ -252,7 +252,7 @@ class Ped(Agent):
         ca_activations = self._ca_activation_history[-1]
 
         # Decay accumulated activations
-        ca_activations = np.matmul(self._S, ca_activations) + np.matmul(self._C, salience_factors * u)
+        ca_activations = np.matmul(self._S, ca_activations) + np.matmul(self._C, u)
 
         self._ca_activation_history = np.append(self._ca_activation_history, [ca_activations], axis = 0)
 
