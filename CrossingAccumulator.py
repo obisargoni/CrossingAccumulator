@@ -263,8 +263,7 @@ class Ped(Agent):
         # Sample crossing alternatives according to their salience
         salience_factors = self.ca_salience_factors_softmax()
 
-        ca = np.random.choice(self._crossing_alternatives, p = salience_factors)
-        i = np.where(self._crossing_alternatives == ca)[0][0]
+        i = np.random.choice(len(salience_factors), p= salience_factors)
 
         # Get utility of sampled alternative - use a measure of vehicle exposure as utility for activation
         ui = self.ca_utility(self._crossing_alternatives[i])
