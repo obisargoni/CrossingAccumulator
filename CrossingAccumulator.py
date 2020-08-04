@@ -2,6 +2,7 @@
 
 import numpy as np
 import scipy.special
+from scipy.stats import bernoulli
 import sys
 
 from mesa import Agent, Model
@@ -180,6 +181,16 @@ class Ped(Agent):
     def ca_costs(self):
         return np.concatenate((self.ca_walk_times(), self.ca_vehicle_exposures()))
 
+    def stochastic_weights(self):
+        '''For use in decision field theory model. Probabilistically set weights for attributes to be either 
+        0 or 1 so that at each time step crossing alternatives are compared on a single attribute only.
+        '''
+
+        # Draw 0 or 1 at random from bernouli distribution, with prob pof 1 given by weight parameter aw
+        weight_time = bernoulli.rvs(self._aw)
+        weight_ve = int(not weight_time)
+        return np.array([weight_time, weight_ve])
+
 
     def cas_attributes(self):
         cas_attr = []
@@ -193,7 +204,7 @@ class Ped(Agent):
     def ca_utilities(self):
         '''Get array of utilities for all crossing alternatives
         '''
-        weights = np.array([self._aw, 1-self._aw])
+        weights = self.stochastic_weights()
         cas_attrs = self.cas_attributes()
 
         utilities = np.matmul(cas_attrs, weights)
