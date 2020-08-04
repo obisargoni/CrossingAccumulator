@@ -17,6 +17,7 @@ class CrossingAlternative(Agent):
     _name = None
 
     _vehicle_flow = None
+    _av_flow = None
 
     def __init__(self, unique_id, model, location = None, wait_time = None, ctype = None, name = None, vehicle_flow = None):
         super().__init__(unique_id, model)
@@ -25,6 +26,8 @@ class CrossingAlternative(Agent):
         self._ctype = ctype
         self._name = name
         self._vehicle_flow = vehicle_flow
+
+        self._av_flow = 1
 
     def getLoc(self):
         return self._loc
@@ -52,6 +55,9 @@ class CrossingAlternative(Agent):
                 return self._vehicle_flow[t]
         else:
             return 0
+
+    def getAvgVehicleFlow(self, t):
+        return self._av_flow
 
 
 
