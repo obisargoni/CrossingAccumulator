@@ -257,9 +257,6 @@ class Ped(Agent):
         '''Sample crossing alternatives based on their costs. From the selected alternative update ped's perception of its costs.
         '''
 
-        # Sample crossing alternatives according to their salience
-        salience_factors = self.ca_salience_factors_softmax()
-
         # Get utilities of crossing alternatives
         u = self.ca_utilities()
 
