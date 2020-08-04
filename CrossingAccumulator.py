@@ -180,21 +180,24 @@ class Ped(Agent):
     def ca_costs(self):
         return np.concatenate((self.ca_walk_times(), self.ca_vehicle_exposures()))
 
-    def ca_utility(self, ca):
-        '''Use vehicle exposure as the measure of crossing utility
-        '''
 
-        # aw gives weight of walk time attribute, 1-aw gives weight of vehicle exposure attribute
-        weights = np.array([self._aw, 1-self._aw])
-        ca_utility_parts = -1*np.array([self.ca_walk_time(ca), self.ca_vehicle_exposure(ca)]) # Multiply by -1 to go from costs to utility
+    def cas_attributes(self):
+        cas_attr = []
+        for ca in self._crossing_alternatives:
+            ca_attr = -1*np.array([self.ca_walk_time(ca), self.ca_vehicle_exposure(ca)]) # Multiply by -1 since these are costs
+            cas_attr.append(ca_attr)
 
-        return np.dot(weights, ca_utility_parts)
+        return np.array(cas_attr)
+
 
     def ca_utilities(self):
         '''Get array of utilities for all crossing alternatives
         '''
-        v_u = np.vectorize(self.ca_utility)
-        return v_u(self._crossing_alternatives)
+        weights = np.array([self._aw, 1-self._aw])
+        cas_attrs = self.cas_attributes()
+
+        utilities = np.matmul(cas_attrs, weights)
+        return utilities
 
     def ca_salience_distances(self):
         '''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
@@ -266,7 +269,7 @@ class Ped(Agent):
         i = np.random.choice(len(salience_factors), p= salience_factors)
 
         # Get utility of sampled alternative - use a measure of vehicle exposure as utility for activation
-        ui = self.ca_utility(self._crossing_alternatives[i])
+        ui = self.ca_utilities()[i]
 
         # Calculate activation by doing max cost + ui (since ui = -costs this gives difference between maximum costs and cost of this ca)
         weights = np.array([self._aw, 1-self._aw])
