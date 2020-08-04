@@ -292,14 +292,15 @@ class Ped(Agent):
         self._loc += self._speed
 
         # Check whether a crossing alternative has emerged as the dominant alternative and choose it if it's nearby
-        self.choose_ca()
+        if self._chosen_ca is None: # Put in place since no longer removing peds after choice is made
+            self.choose_ca()
 
         return
 
     def step(self):
 
         # Check if ped has reached end of the road or if it has chosen a crossing
-        if (self.getLoc() < self._road_length) and (self._chosen_ca is None):
+        if (self.getLoc() < self._road_length): #and (self._chosen_ca is None):
 
             # update ped's perceptions of crossing alternative utilities
             for i in range(self._acumulator_rate):
