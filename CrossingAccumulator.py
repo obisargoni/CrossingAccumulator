@@ -104,6 +104,7 @@ class Ped(Agent):
         self._ca_activation_history = np.array([[0] * len(self._crossing_alternatives)])
         self._ca_costs_history = np.array([[0] * len(self._crossing_alternatives) * 2])
         self._ca_utility_history = np.array([[0] * len(self._crossing_alternatives)])
+        self._loc_history = np.array([0])
 
         # Set up matrices used for activation accumulation
         self.setup_C()
@@ -314,11 +315,11 @@ class Ped(Agent):
         if (self.getLoc() < self._road_length): #and (self._chosen_ca is None):
 
             # update ped's perceptions of crossing alternative utilities
-            for i in range(self._acumulator_rate):
-                self.accumulate_ca_activation()
+            self.accumulate_ca_activation()
 
-                self._ca_costs_history = np.append(self._ca_costs_history, [self.ca_costs()], axis=0)
-                self._ca_utility_history = np.append(self._ca_utility_history, [self.ca_utilities()], axis=0)
+            self._ca_costs_history = np.append(self._ca_costs_history, [self.ca_costs()], axis=0)
+            self._ca_utility_history = np.append(self._ca_utility_history, [self.ca_utilities()], axis=0)
+            self._loc_history = np.append(self._loc_history, self._loc)
 
             # move the ped along
             self.walk()
