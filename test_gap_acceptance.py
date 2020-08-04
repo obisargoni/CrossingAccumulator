@@ -116,7 +116,7 @@ activation_cols = ['unmarked_a','zebra_a']
 dict_markers = {'dest':dest, 'zebra':zebra_location}
 
 # Time varying vehicle flow, create gaps in traffic that occur when ped is walking past detination
-v_const_high = [2]*road_length
+v_const_high = [5]*road_length
 v_const_low = [1]*road_length
 
 gap_size = 5
