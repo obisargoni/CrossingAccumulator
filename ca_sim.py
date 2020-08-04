@@ -23,8 +23,7 @@ fixed_params = {"road_width": road_width,
                	"ped_origin": ped_start_location,
                	"ped_speed": ped_walking_speed,
                	"alpha" : 1.2,
-               	"gamma" : 0.1,
-               	"n_peds" : 1}
+               	"gamma" : 0.9}
 
 variable_params = {	"ped_destination": [road_length, road_length*0.5],
 					"lam": range(1, 10, 1),
