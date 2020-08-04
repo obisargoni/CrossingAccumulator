@@ -1,2 +1,3 @@
 *.pyc
 img/*
+/agg_batch_data.csv
