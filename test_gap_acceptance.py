@@ -82,7 +82,8 @@ def plot_model_reults(model, suffs, vflow):
 	df_activations['v_flow'] = vflow
 
 	# Make plots of costs, utilities, activations each with vehicle flow over the top
-	dict_markers['choice']=model.choice_step
+	if model.choice_step is not None:
+		dict_markers['choice']=model.choice_step
 	f_costs = plot_costs(df_costs, ped_cost_cols, 'Costs', suffs, vehicle_flow_col = 'v_flow', dict_markers = dict_markers)
 	f_u = plot_two_series(df_utilities, 'unmarked_u', 'zebra_u', 'utilities', suffs, vehicle_flow_col = 'v_flow', dict_markers = dict_markers)
 	f_act = plot_two_series(df_activations, 'unmarked_a', 'zebra_a', 'utilities', suffs, vehicle_flow_col = 'v_flow', dict_markers = dict_markers)
