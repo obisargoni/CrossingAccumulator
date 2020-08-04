@@ -21,8 +21,9 @@ from CrossingAccumulator import CrossingModel, CrossingAlternative, Ped
 #
 #
 #################################
-def plot_two_series(df, series_a, series_b, title, title_suffix, vehicle_flow_col = None, dict_markers = None):
-
+def plot_two_series(df, x, series_a, series_b, title, title_suffix, vehicle_flow_col = None, dict_markers = None):
+	df.set_index(x, inplace=True)
+	
 	fig = plt.figure(figsize=(12,5))
 
 	fig.gca().set_title(title+title_suffix)
@@ -43,7 +44,9 @@ def plot_two_series(df, series_a, series_b, title, title_suffix, vehicle_flow_co
 	fig.legend(h1,l1,loc=2)
 	return fig
 
-def plot_costs(df, cols, title, title_suffix, vehicle_flow_col = None, dict_markers = None):
+def plot_costs(df, x, cols, title, title_suffix, vehicle_flow_col = None, dict_markers = None):
+	df.set_index(x, inplace=True)
+
 	fig = plt.figure(figsize=(12,5))
 
 	fig.gca().set_title(title+title_suffix)
@@ -73,20 +76,30 @@ def plot_costs(df, cols, title, title_suffix, vehicle_flow_col = None, dict_mark
 def plot_model_reults(model, suffs, vflow):
 	model_data = model.datacollector.get_agent_vars_dataframe()
 
+	ped_locations = model.ped._loc_history[1:]
+	vflow_data = []
+	for l in ped_locations:
+		i = int(l) % len(vflow)
+		vflow_data.append(vflow[i])
+
 	df_costs = pd.DataFrame(columns = ped_cost_cols, data = model.ped._ca_costs_history[1:])
 	df_utilities = pd.DataFrame(columns = ped_utility_cols, data = model.ped._ca_utility_history[1:])
 	df_activations = pd.DataFrame(columns = activation_cols, data = model.ped.getActivationHistory()[1:])
 
-	df_costs['v_flow'] = vflow
-	df_utilities['v_flow'] = vflow
-	df_activations['v_flow'] = vflow
+	df_costs['v_flow'] = vflow_data
+	df_utilities['v_flow'] = vflow_data
+	df_activations['v_flow'] = vflow_data
+
+	df_costs['x'] = ped_locations
+	df_utilities['x'] = ped_locations
+	df_activations['x'] = ped_locations
 
 	# Make plots of costs, utilities, activations each with vehicle flow over the top
 	if model.choice_step is not None:
 		dict_markers['choice']=model.choice_step
-	f_costs = plot_costs(df_costs, ped_cost_cols, 'Costs', suffs, vehicle_flow_col = 'v_flow', dict_markers = dict_markers)
-	f_u = plot_two_series(df_utilities, 'unmarked_u', 'zebra_u', 'utilities', suffs, vehicle_flow_col = 'v_flow', dict_markers = dict_markers)
-	f_act = plot_two_series(df_activations, 'unmarked_a', 'zebra_a', 'utilities', suffs, vehicle_flow_col = 'v_flow', dict_markers = dict_markers)
+	f_costs = plot_costs(df_costs,'x', ped_cost_cols, 'Costs', suffs, vehicle_flow_col = 'v_flow', dict_markers = dict_markers)
+	f_u = plot_two_series(df_utilities, 'x', 'unmarked_u', 'zebra_u', 'utilities', suffs, vehicle_flow_col = 'v_flow', dict_markers = dict_markers)
+	f_act = plot_two_series(df_activations, 'x', 'unmarked_a', 'zebra_a', 'utilities', suffs, vehicle_flow_col = 'v_flow', dict_markers = dict_markers)
 
 	f_costs.show()
 	f_u.show()
@@ -106,9 +119,12 @@ zebra_type = 'zebra'
 mid_block_type = 'unmarked'
 
 ped_start_location = 0
-dest = road_length/5
+dest = road_length/2
 ped_walking_speed = 3
 gamma = 0.9
+a_rate = 1
+
+flow_array_size = road_length * a_rate
 
 ped_cost_cols = ['unmarked_wt', 'zebra_wt', 'unmarked_ve','zebra_ve']
 ped_utility_cols = ['unmarked_u','zebra_u']
@@ -117,16 +133,16 @@ activation_cols = ['unmarked_a','zebra_a']
 dict_markers = {'dest':dest, 'zebra':zebra_location}
 
 # Time varying vehicle flow, create gaps in traffic that occur when ped is walking past detination
-v_const_high = [5]*road_length
-v_const_low = [1]*road_length
+v_const_high = [5]*flow_array_size
+v_const_low = [1]*flow_array_size
 
-gap_size = 5
-v_vary_high = [5]*road_length
+gap_size = 5*a_rate
+v_vary_high = [5]*flow_array_size
 for i in range(-gap_size, gap_size):
 	ind = int(dest + i)
 	v_vary_high[ind] = 0
 
-v_vary_low = [1]*road_length
+v_vary_low = [1]*flow_array_size
 for i in range(-gap_size, gap_size):
 	ind = int(dest + i)
 	v_vary_low[ind]=0
@@ -140,7 +156,7 @@ aw = 0.5
 vf = v_const_high
 suffs = " lam:{}, aw:{}".format(lam, aw)
 model = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_flow = vf, 
-						alpha = 2, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, aw = aw,	a_rate = 1)
+						alpha = 2, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, aw = aw,	a_rate = a_rate)
 while model.running:
 	model.step()
 
@@ -152,7 +168,7 @@ aw = 0.5
 vf = v_vary_high
 suffs = " lam:{}, aw:{}".format(lam, aw)
 model = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_flow = vf, 
-						alpha = 2, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, aw = aw,	a_rate = 1)
+						alpha = 2, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, aw = aw,	a_rate = a_rate)
 while model.running:
 	model.step()
 
@@ -164,7 +180,7 @@ aw = 0.5
 vf = v_vary_low
 suffs = " lam:{}, aw:{}".format(lam, aw)
 model = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_flow = vf, 
-						alpha = 2, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, aw = aw,	a_rate = 1)
+						alpha = 2, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, aw = aw,	a_rate = a_rate)
 while model.running:
 	model.step()
 
