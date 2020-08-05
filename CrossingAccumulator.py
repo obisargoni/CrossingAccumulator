@@ -224,9 +224,9 @@ class Ped(Agent):
         '''Reshapes the attributes matrix into a single line of costs for each attribute and crossing alternative.
         '''
         if model == 'dft':
-            ca_costs = np.reshape(self.cas_attributes_dft(), (len(self._crossing_alternatives) * 2, 1))
+            ca_costs = np.reshape(self.cas_attributes_dft(), (len(self._crossing_alternatives) * 2))
         else:
-            ca_costs = np.reshape(self.cas_attributes_sampling(), (len(self._crossing_alternatives) * 2, 1))
+            ca_costs = np.reshape(self.cas_attributes_sampling(), (len(self._crossing_alternatives) * 2))
         return ca_costs
 
 
