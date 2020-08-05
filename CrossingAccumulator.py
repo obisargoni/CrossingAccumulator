@@ -181,6 +181,35 @@ class Ped(Agent):
 
     def ca_costs(self):
         return np.concatenate((self.ca_walk_times(), self.ca_vehicle_exposures()))
+    def ca_vehicle_exposure_fd(self, ca):
+        '''Get vehicle exposure fractional difference from characteristic vehicle, 
+        chosen to be the time taken to walk the length of the road.
+        '''
+        v_flow = ca.getVehicleFlow()
+        av_flow = ca.getAvgVehicleFlow()
+        
+        return (1 - v_flow/av_flow)
+
+    def ca_vehicle_exposures_fd(self):
+        '''Get array of walking times for each crossing alternative
+        '''
+        v_ve_fd = np.vectorize(self.ca_vehicle_exposure_fd)
+        return v_ve_fd(self._crossing_alternatives)
+
+    def ca_walk_time_fd(self, ca):
+        '''Get walk time fractional difference from characteristic walk time, 
+        chosen to be the time taken to walk the length of the road.
+        '''
+        wt = self.ca_walk_time(ca)
+        char_wt = self._road_length / self._speed
+
+        return (1-wt/char_wt)
+
+    def ca_walk_times_fd(self):
+        '''Get array of walking times for each crossing alternative
+        '''
+        v_wt_fd = np.vectorize(self.ca_walk_time_fd)
+        return v_wt_fd(self._crossing_alternatives)
 
     def stochastic_weights(self):
         '''For use in decision field theory model. Probabilistically set weights for attributes to be either 
