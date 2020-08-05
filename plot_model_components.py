@@ -60,8 +60,8 @@ def ped_salience_distance_and_factors(ped, n_steps, salience_type = 'ca'):
 	
 	return {'salience_distances':df_sd, 'salience_factors':df_sf}
 
-def get_utility_costs_of_crossing_alterantives(ped):
-	utilities = ped.ca_utilities()
+def get_utility_costs_of_crossing_alterantives(ped, model):
+	utilities = ped.ca_utilities(model = model)
 	attributes = ped.cas_attributes_dft()
 	wt_costs = attributes[:,0]
 	ve_costs = attributes[:,1]
@@ -130,42 +130,39 @@ dict_markers = {'destination':dest, 'zebra':zebra_location}
 
 ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = lam, aw = 0.5, a_rate = 1)
 
-dict_data = ped_salience_distance_and_factors(ped, 50)
+dict_data = ped_salience_distance_and_factors(ped, 50, salience_type = 'ca')
 
 title_suffix = " lam:{}".format(lam)
-fig_salience = plot_two_series(dict_data['salience_distances'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Distances',title_suffix = title_suffix, dict_markers = dict_markers)
-fig_probs = plot_two_series(dict_data['salience_factors'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Factor',title_suffix = title_suffix, dict_markers = dict_markers)
+fig_salience = plot_two_series(dict_data['salience_distances'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Distances - CA',title_suffix = title_suffix, dict_markers = dict_markers)
+fig_probs = plot_two_series(dict_data['salience_factors'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Factor - CA',title_suffix = title_suffix, dict_markers = dict_markers)
 
 fig_salience.show()
 fig_probs.show()
 
 
-# try with different lambda value
-
-lam = 1
+# try with different salience type
 
 ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = lam, aw = 0.5, a_rate = 1)
 
-dict_data = ped_salience_distance_and_factors(ped, 50)
+dict_data = ped_salience_distance_and_factors(ped, 50, salience_type = 'destination')
 
 title_suffix = " lam:{}".format(lam)
-fig_salience = plot_two_series(dict_data['salience_distances'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Distances', title_suffix=title_suffix, dict_markers = dict_markers)
-fig_probs = plot_two_series(dict_data['salience_factors'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Factor', title_suffix=title_suffix, dict_markers = dict_markers)
+fig_salience = plot_two_series(dict_data['salience_distances'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Distances - Dest', title_suffix=title_suffix, dict_markers = dict_markers)
+fig_probs = plot_two_series(dict_data['salience_factors'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Factor - Dest', title_suffix=title_suffix, dict_markers = dict_markers)
 
 fig_salience.show()
 fig_probs.show()
 
 
-# Try with different salience factor calculation (softmax)
+# Try with different lambda value
 lam = 1
 
 ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = lam, aw = 0.5, a_rate = 1)
 
 dict_data = ped_salience_distance_and_factors(ped, 50, salience_type = 'ca')
 
-title_suffix = " softmax, lam:{}".format(lam)
-fig_salience = plot_two_series(dict_data['salience_distances'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Distances', title_suffix=title_suffix, dict_markers = dict_markers)
-fig_probs = plot_two_series(dict_data['salience_factors'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Factor', title_suffix=title_suffix, dict_markers = dict_markers)
+title_suffix = " lam:{}".format(lam)
+fig_probs = plot_two_series(dict_data['salience_factors'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Factor - CA', title_suffix=title_suffix, dict_markers = dict_markers)
 
 fig_salience.show()
 fig_probs.show()
@@ -199,12 +196,13 @@ crossing_altertives = [unmarked, zebra]
 utility_costs_cols = ['unmarked_u','zebra_u', 'unmarked_wt', 'zebra_wt', 'unmarked_ve', 'zebra_ve', 'loc']
 
 # Get utility for 0 vehicle flow and compare to costs for 5 vehicle flow
-u0 = np.append(get_utility_costs_of_crossing_alterantives(ped0), ped0._loc)
+model = 'sampling'
+u0 = np.append(get_utility_costs_of_crossing_alterantives(ped0, model), ped0._loc)
 utility_r0_v0 = np.array([u0])
 for i in range(1,50):
 	ped0._loc += 1
 	ped0.accumulate_ca_activation()
-	ui = np.append(get_utility_costs_of_crossing_alterantives(ped0), ped0._loc)
+	ui = np.append(get_utility_costs_of_crossing_alterantives(ped0, model), ped0._loc)
 	utility_r0_v0 = np.append(utility_r0_v0, [ui], axis=0)
 
 df_a_r0_v0 = pd.DataFrame(columns = ['unmarked','zebra'], data = ped0.getActivationHistory())
@@ -216,34 +214,34 @@ ped0._loc = 0
 ped0._crossing_alternatives = crossing_altertives
 ped0._ca_activation_history = np.array([[0] * len(ped0._crossing_alternatives)])
 
-u0 = np.append(get_utility_costs_of_crossing_alterantives(ped0), ped0._loc)
+u0 = np.append(get_utility_costs_of_crossing_alterantives(ped0, model), ped0._loc)
 utility_r0_v2 = np.array([u0])
 for i in range(1,50):
 	ped0._loc += 1
 	ped0.accumulate_ca_activation()
-	ui = np.append(get_utility_costs_of_crossing_alterantives(ped0), ped0._loc)
+	ui = np.append(get_utility_costs_of_crossing_alterantives(ped0, model), ped0._loc)
 	utility_r0_v2 = np.append(utility_r0_v2, [ui], axis=0)
 
 df_a_r0_v2 = pd.DataFrame(columns = ['unmarked','zebra'], data = ped0.getActivationHistory())
 
 # Use aw=1 ped
 ped1._crossing_alternatives = crossing_altertives
-u0 = np.append(get_utility_costs_of_crossing_alterantives(ped1), ped1._loc)
+u0 = np.append(get_utility_costs_of_crossing_alterantives(ped1, model), ped1._loc)
 utility_r1_v2 = np.array([u0])
 for i in range(1,50):
 	ped1._loc += 1
 	ped1.accumulate_ca_activation()
-	ui = np.append(get_utility_costs_of_crossing_alterantives(ped1), ped1._loc)
+	ui = np.append(get_utility_costs_of_crossing_alterantives(ped1, model), ped1._loc)
 	utility_r1_v2 = np.append(utility_r1_v2, [ui], axis=0)
 
 # use half ped
 pedhalf._crossing_alternatives = crossing_altertives
-u0 = np.append(get_utility_costs_of_crossing_alterantives(pedhalf), pedhalf._loc)
+u0 = np.append(get_utility_costs_of_crossing_alterantives(pedhalf, model), pedhalf._loc)
 utility_rh_v2 = np.array([u0])
 for i in range(1,50):
 	pedhalf._loc += 1
 	pedhalf.accumulate_ca_activation()
-	ui = np.append(get_utility_costs_of_crossing_alterantives(pedhalf), pedhalf._loc)
+	ui = np.append(get_utility_costs_of_crossing_alterantives(pedhalf, model), pedhalf._loc)
 	utility_rh_v2 = np.append(utility_rh_v2, [ui], axis=0)
 
 df_u_r0_v0 = pd.DataFrame(columns = utility_costs_cols, data = utility_r0_v0)
