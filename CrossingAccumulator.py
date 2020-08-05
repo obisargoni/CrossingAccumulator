@@ -239,20 +239,17 @@ class Ped(Agent):
         utilities = np.matmul(cas_attrs, weights)
         return utilities
 
-    def ca_salience_distances(self):
-        '''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
+    def ca_salience_distances_to_ca(self):
+        '''Salience of crossing option determined by difference between road length and distance to crossing alternative.
         '''
         ca_salience_distances = []
         for i,ca in enumerate(self._crossing_alternatives):
-            # Get distance from agent to destination
-            d = abs(self._dest - self._loc)
 
             # Get distnaces to and from the ca
             d_to = self.caLoc(ca) - self._loc
-            d_from = self._dest - self.caLoc(ca)
 
             # Salience distance is difference between direct distance and distance via crossing, scaled by road length
-            d_s = (abs(d_to) + abs(d_from) - d) / self._road_length
+            d_s = (self._road_length - d_to) / self._road_length
             ca_salience_distances.append(d_s)
         return np.array(ca_salience_distances)
 
