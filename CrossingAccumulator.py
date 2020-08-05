@@ -171,10 +171,15 @@ class Ped(Agent):
         '''Get vehicle exposure fractional difference from characteristic vehicle, 
         chosen to be the time taken to walk the length of the road.
         '''
-        v_flow = ca.getVehicleFlow()
-        av_flow = ca.getAvgVehicleFlow()
+        t_cross = self._road_width / self._speed
+
+        # use peds location as a proxy for time
+        t = int(self._loc) % self._road_length
+
+        ve = (t_cross * ca.getVehicleFlow(t))
+        av_ve = (t_cross * ca.getAvgVehicleFlow())
         
-        return (1 - v_flow/av_flow)
+        return (1 - ve/av_ve)
 
 
     def ca_walk_time_fd(self, ca):
