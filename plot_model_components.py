@@ -32,25 +32,25 @@ lam = 0.1
 #
 ##################################
 
-def ped_salience_distance_and_factors(ped, n_steps, softmax = False):
+def ped_salience_distance_and_factors(ped, n_steps, salience_type = 'ca'):
 	cols = ['unmarked','zebra', 'loc']
 
-	if softmax==False:
-		salience_distances = np.array([np.append(ped.ca_salience_distances(), ped._loc)])
-		s_factors = np.array([np.append(ped.ca_salience_factors(),ped._loc)])
+	if salience_type == 'ca':
+		salience_distances = np.array([np.append(ped.ca_salience_distances_to_ca(), ped._loc)])
 	else:
-		salience_distances = np.array([np.append(ped.ca_salience_distances_softmax(), ped._loc)])
-		s_factors = np.array([np.append(ped.ca_salience_factors_softmax(),ped._loc)])
+		salience_distances = np.array([np.append(ped.ca_salience_distances_to_dest(), ped._loc)])
+	
+	s_factors = np.array([np.append(ped.ca_salience_factors_softmax(salience_type),ped._loc)])
 
 	for i in range(1, n_steps):
 		ped._loc += 1
 
-		if softmax == False:
-			salience_i = np.append(ped.ca_salience_distances(), ped._loc)
-			sf_i = np.append(ped.ca_salience_factors(), ped._loc)
+		if salience_type == 'ca':
+			salience_i = np.append(ped.ca_salience_distances_to_ca(), ped._loc)
 		else:
-			salience_i = np.append(ped.ca_salience_distances_softmax(), ped._loc)
-			sf_i = np.append(ped.ca_salience_factors_softmax(), ped._loc)			
+			salience_i = np.append(ped.ca_salience_distances_to_dest(), ped._loc)
+
+		sf_i = np.append(ped.ca_salience_factors_softmax(salience_type),ped._loc)
 
 		salience_distances = np.append(salience_distances, [salience_i], axis=0)
 		s_factors = np.append(s_factors, [sf_i], axis=0)
@@ -161,7 +161,7 @@ lam = 1
 
 ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = 1.2, gamma = 0.9, lam = lam, aw = 0.5, a_rate = 1)
 
-dict_data = ped_salience_distance_and_factors(ped, 50, softmax = True)
+dict_data = ped_salience_distance_and_factors(ped, 50, salience_type = 'ca')
 
 title_suffix = " softmax, lam:{}".format(lam)
 fig_salience = plot_two_series(dict_data['salience_distances'], 'unmarked', 'zebra', 'unmarked crossing', 'zebra crossing', 'Salience Distances', title_suffix=title_suffix, dict_markers = dict_markers)
