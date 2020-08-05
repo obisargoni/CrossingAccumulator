@@ -179,8 +179,6 @@ class Ped(Agent):
         v_ww_times = np.vectorize(self.ca_walk_time)
         return v_ww_times(self._crossing_alternatives)
 
-    def ca_costs(self):
-        return np.concatenate((self.ca_walk_times(), self.ca_vehicle_exposures()))
     def ca_vehicle_exposure_fd(self, ca):
         '''Get vehicle exposure fractional difference from characteristic vehicle, 
         chosen to be the time taken to walk the length of the road.
