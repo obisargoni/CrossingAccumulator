@@ -253,8 +253,8 @@ class Ped(Agent):
             ca_salience_distances.append(d_s)
         return np.array(ca_salience_distances)
 
-    def ca_salience_distances_softmax(self):
-        '''Salience of crossing option determined by distance to crossing althernative plus distance from crossing alternative to destination
+    def ca_salience_distances_to_dest(self):
+        '''Salience of crossing option determined by difference between twice the road length and the distance to the destination
         '''
         ca_salience_distances = []
         for i,ca in enumerate(self._crossing_alternatives):
