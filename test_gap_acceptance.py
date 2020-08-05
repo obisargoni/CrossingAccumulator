@@ -126,7 +126,7 @@ a_rate = 1
 
 flow_array_size = road_length * a_rate
 
-ped_cost_cols = ['unmarked_wt', 'zebra_wt', 'unmarked_ve','zebra_ve']
+ped_cost_cols = ['unmarked_wt','unmarked_ve', 'zebra_wt', 'zebra_ve']
 ped_utility_cols = ['unmarked_u','zebra_u']
 activation_cols = ['unmarked_a','zebra_a']
 

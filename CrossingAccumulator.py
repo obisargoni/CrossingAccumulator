@@ -222,7 +222,7 @@ class Ped(Agent):
         return np.array([weight_time, weight_ve])
 
 
-    def cas_attributes(self):
+    def cas_attributes_dft(self):
         cas_attr = []
         for ca in self._crossing_alternatives:
             ca_attr = -1*np.array([self.ca_walk_time(ca), self.ca_vehicle_exposure(ca)]) # Multiply by -1 since these are costs
@@ -238,11 +238,27 @@ class Ped(Agent):
 
         return np.array(cas_attr)
 
-    def ca_utilities(self):
+
+    def ca_costs(self, model = 'dft'):
+        '''Reshapes the attributes matrix into a single line of costs for each attribute and crossing alternative.
+        '''
+        if model == 'dft':
+            ca_costs = np.reshape(self.cas_attributes_dft(), (len(self._crossing_alternatives) * 2, 1))
+        else:
+            ca_costs = np.reshape(self.cas_attributes_sampling(), (len(self._crossing_alternatives) * 2, 1))
+        return ca_costs
+
+
+    def ca_utilities(self, model = 'dft'):
         '''Get array of utilities for all crossing alternatives
         '''
-        weights = self.stochastic_weights()
-        cas_attrs = self.cas_attributes()
+
+        if model == 'dft':
+            weights = self.stochastic_weights()
+            cas_attrs = self.cas_attributes_dft()
+        else:
+            weights = np.array([self._aw, 1-self._aw])
+            cas_attrs = self.cas_attributes_sampling()
 
         utilities = np.matmul(cas_attrs, weights)
         return utilities
@@ -312,26 +328,14 @@ class Ped(Agent):
         salience_factors = self.ca_salience_factors_softmax()
 
         i = np.random.choice(len(salience_factors), p= salience_factors)
+        u = self.utilities(model = 'sampling')
 
-        # Get utility of sampled alternative - use a measure of vehicle exposure as utility for activation
-        ui = self.ca_utilities()[i]
-
-        # Calculate activation by doing max cost + ui (since ui = -costs this gives difference between maximum costs and cost of this ca)
-        weights = np.array([self._aw, 1-self._aw])
-        max_costs = np.dot(weights, np.array([(2*self._road_length / self._speed), 20])) # 20 represents maximum vehicle exposure for this road
-        ca_act = max_costs + ui
+        # Get matrix used to make activation only accumulate for the sampled crossing alternative
+        _C = np.zeros((len(salience_factors), len(salience_factors)))
+        _C[i,i] = 1
 
         ca_activations = self._ca_activation_history[-1]
-
-        # Check if value to update is nan (meaning not updated yet). If it is initialise as zero
-        if np.isnan(ca_activations[i]):
-            ca_activations[i] = 0.0
-
-        # Decay accumulated activations
-        ca_activations = ca_activations * self._gamma
-
-        # Accumulate new activation for sampled ca
-        ca_activations[i] += ca_act
+        ca_activations = np.matmul(self._S, ca_activations) + np.matmul(_C, u)
 
         self._ca_activation_history = np.append(self._ca_activation_history, [ca_activations], axis = 0)
 
