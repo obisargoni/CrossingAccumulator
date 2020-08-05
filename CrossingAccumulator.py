@@ -254,7 +254,7 @@ class Ped(Agent):
             d_to = self.caLoc(ca) - self._loc
 
             # Salience distance is difference between direct distance and distance via crossing, scaled by road length
-            d_s = (self._road_length - d_to) / self._road_length
+            d_s = (self._road_length - abs(d_to)) / self._road_length
             ca_salience_distances.append(d_s)
         return np.array(ca_salience_distances)
 
