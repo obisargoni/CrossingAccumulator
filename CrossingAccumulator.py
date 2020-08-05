@@ -271,13 +271,12 @@ class Ped(Agent):
             ca_salience_distances.append(d_s)
         return np.array(ca_salience_distances)
 
-    def ca_salience_factors(self):
-        '''Get the factors to scale utilities by
-        '''
-        return np.exp(-self._lambda * self.ca_salience_distances())
 
-    def ca_salience_factors_softmax(self):
-        return scipy.special.softmax(self._lambda * self.ca_salience_distances_softmax())
+    def ca_salience_factors_softmax(self, salience_type = 'ca'):
+        if salience_type == 'ca':
+            return scipy.special.softmax(self._lambda * self.ca_salience_distances_to_ca())
+        else:
+            return scipy.special.softmax(self._lambda * self.ca_salience_distances_to_dest())
 
     def accumulate_ca_activation(self):
         '''Sample crossing alternatives based on their costs. From the selected alternative update ped's perception of its costs.
@@ -298,7 +297,7 @@ class Ped(Agent):
         '''
 
         # Sample crossing alternatives according to their salience
-        salience_factors = self.ca_salience_factors_softmax()
+        salience_factors = self.ca_salience_factors_softmax(salience_type = 'ca')
 
         i = np.random.choice(len(salience_factors), p= salience_factors)
         u = self.utilities(model = 'sampling')
