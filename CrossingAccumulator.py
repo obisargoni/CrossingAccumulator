@@ -230,6 +230,13 @@ class Ped(Agent):
 
         return np.array(cas_attr)
 
+    def cas_attributes_sampling(self):
+        cas_attr = []
+        for ca in self._crossing_alternatives:
+            ca_attr = np.array([self.ca_walk_time_fd(ca), self.ca_vehicle_exposure_fd(ca)])
+            cas_attr.append(ca_attr)
+
+        return np.array(cas_attr)
 
     def ca_utilities(self):
         '''Get array of utilities for all crossing alternatives
