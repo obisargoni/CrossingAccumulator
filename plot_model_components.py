@@ -62,8 +62,9 @@ def ped_salience_distance_and_factors(ped, n_steps, softmax = False):
 
 def get_utility_costs_of_crossing_alterantives(ped):
 	utilities = ped.ca_utilities()
-	wt_costs = ped.ca_walk_times()
-	ve_costs = ped.ca_vehicle_exposures()
+	attributes = ped.cas_attributes_dft()
+	wt_costs = attributes[:,0]
+	ve_costs = attributes[:,1]
 
 	return np.concatenate((utilities, wt_costs, ve_costs))
 
