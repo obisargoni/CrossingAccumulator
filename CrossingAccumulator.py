@@ -283,36 +283,27 @@ class Ped(Agent):
         else:
             return scipy.special.softmax(self._lambda * self.ca_salience_distances_to_dest())
 
-    def accumulate_ca_activation(self):
+    def accumulate_ca_activation(self, model_type = 'sampling'):
         '''Sample crossing alternatives based on their costs. From the selected alternative update ped's perception of its costs.
         '''
+        ca_activations = self._ca_activation_history[-1]
 
         # Get utilities of crossing alternatives
-        u = self.ca_utilities()
+        u = self.ca_utilities(model = model_type)
 
-        ca_activations = self._ca_activation_history[-1]
+        if model_type == 'dft':
+            # Decay accumulated activations
+            ca_activations = np.matmul(self._S, ca_activations) + np.sign(np.matmul(self._C, u))
+        else:
+            # Sample crossing alternatives according to their salience
+            salience_factors = self.ca_salience_factors_softmax(salience_type = 'ca')
+            i = np.random.choice(len(salience_factors), p= salience_factors)
 
-        # Decay accumulated activations
-        ca_activations = np.matmul(self._S, ca_activations) + np.sign(np.matmul(self._C, u))
+            # Get matrix used to make activation only accumulate for the sampled crossing alternative
+            _C = np.zeros((len(salience_factors), len(salience_factors)))
+            _C[i,i] = 1
 
-        self._ca_activation_history = np.append(self._ca_activation_history, [ca_activations], axis = 0)
-
-    def accumulate_ca_activation_sampling(self):
-        '''Sample crossing alternatives based on their costs. From the selected alternative update ped's perception of its costs.
-        '''
-
-        # Sample crossing alternatives according to their salience
-        salience_factors = self.ca_salience_factors_softmax(salience_type = 'ca')
-
-        i = np.random.choice(len(salience_factors), p= salience_factors)
-        u = self.utilities(model = 'sampling')
-
-        # Get matrix used to make activation only accumulate for the sampled crossing alternative
-        _C = np.zeros((len(salience_factors), len(salience_factors)))
-        _C[i,i] = 1
-
-        ca_activations = self._ca_activation_history[-1]
-        ca_activations = np.matmul(self._S, ca_activations) + np.matmul(_C, u)
+            ca_activations = np.matmul(self._S, ca_activations) + np.matmul(_C, u)
 
         self._ca_activation_history = np.append(self._ca_activation_history, [ca_activations], axis = 0)
 
