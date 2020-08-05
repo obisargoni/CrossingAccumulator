@@ -57,6 +57,8 @@ class CrossingAlternative(Agent):
 
 class Ped(Agent):
 
+    _model_type = None
+
     _loc = None
     _speed = None # ms-1
     _dest = None
@@ -78,8 +80,11 @@ class Ped(Agent):
     _chosen_ca = None
     _ca_activation_history = None
 
-    def __init__(self, unique_id, model, location, speed, destination, crossing_altertives, road_length, road_width, alpha, gamma, lam, aw, a_rate):
+    def __init__(self, unique_id, model, location, speed, destination, crossing_altertives, road_length, road_width, alpha, gamma, lam, aw, a_rate, model_type = 'sampling'):
         super().__init__(unique_id, model)
+
+        self._model_type = model_type
+
         self._loc = location
         self._speed = speed
         self._dest = destination
@@ -323,10 +328,9 @@ class Ped(Agent):
         if (self.getLoc() < self._road_length): #and (self._chosen_ca is None):
 
             # update ped's perceptions of crossing alternative utilities
-            self.accumulate_ca_activation()
-
-            self._ca_costs_history = np.append(self._ca_costs_history, [self.ca_costs()], axis=0)
-            self._ca_utility_history = np.append(self._ca_utility_history, [self.ca_utilities()], axis=0)
+            self.accumulate_ca_activation(model_type = self._model_type)
+            self._ca_costs_history = np.append(self._ca_costs_history, [self.ca_costs(model = self._model_type)], axis=0)
+            self._ca_utility_history = np.append(self._ca_utility_history, [self.ca_utilities(model = self._model_type)], axis=0)
             self._loc_history = np.append(self._loc_history, self._loc)
 
             # move the ped along
@@ -404,7 +408,8 @@ class CrossingModel(Model):
         crossing_altertives = np.array([unmarked,zebra])
 
         i = 0
-        self.ped = Ped(i, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = alpha, gamma = gamma, lam = lam, aw = aw, a_rate = a_rate)
+        model_type = 'sampling'
+        self.ped = Ped(i, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = alpha, gamma = gamma, lam = lam, aw = aw, a_rate = a_rate, model_type = model_type)
         self.schedule.add(self.ped)
 
         self.datacollector = DataCollector(agent_reporters={"CrossingType": "chosenCAType"})
