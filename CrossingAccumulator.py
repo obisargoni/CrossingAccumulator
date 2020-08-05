@@ -50,7 +50,7 @@ class CrossingAlternative(Agent):
         else:
             return 0
 
-    def getAvgVehicleFlow(self, t):
+    def getAvgVehicleFlow(self):
         return self._av_flow
 
 
