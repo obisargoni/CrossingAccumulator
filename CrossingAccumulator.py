@@ -69,18 +69,18 @@ class Ped(Agent):
     _road_width = None
 
     _lambda = None # Used to control effect of salience distance on contribution of option utility to activation
-    _aw = None # Controls sensitivity to traffic exposure
+    _alpha = None # Controls sensitivity to traffic exposure
     _gamma = None # controls the rate at which historic activations decay
 
     _C = None # Contrast matrix used to compare crossing option costs to get activations
     _S = None # Matrix used to decay (and possibly compare, though not currently) already accumulated activations
 
-    _alpha = None # Proportion of median activation that ca activation must be to be considered dominant
+    _epsilon = None # Proportion of median activation that ca activation must be to be considered dominant
     _acumulator_rate = None
     _chosen_ca = None
     _ca_activation_history = None
 
-    def __init__(self, unique_id, model, location, speed, destination, crossing_altertives, road_length, road_width, alpha, gamma, lam, aw, a_rate, model_type = 'sampling'):
+    def __init__(self, unique_id, model, location, speed, destination, crossing_altertives, road_length, road_width, epsilon, gamma, lam, alpha, a_rate, model_type = 'sampling'):
         super().__init__(unique_id, model)
 
         self._model_type = model_type
@@ -93,10 +93,10 @@ class Ped(Agent):
         self._road_width = road_width
 
         self._lambda = lam
-        self._aw = aw # Patameter that controls weight walk time vs crossing exposure in ca utility calculation
+        self._alpha = alpha # Patameter that controls weight walk time vs crossing exposure in ca utility calculation
         self._acumulator_rate = a_rate
 
-        self._alpha = alpha
+        self._epsilon = epsilon
         self._gamma = gamma
 
         self._crossing_alternatives = np.array([])
@@ -202,8 +202,8 @@ class Ped(Agent):
         0 or 1 so that at each time step crossing alternatives are compared on a single attribute only.
         '''
 
-        # Draw 0 or 1 at random from bernouli distribution, with prob pof 1 given by weight parameter aw
-        weight_time = bernoulli.rvs(self._aw)
+        # Draw 0 or 1 at random from bernouli distribution, with prob pof 1 given by weight parameter alpha
+        weight_time = bernoulli.rvs(self._alpha)
         weight_ve = int(not weight_time)
         return np.array([weight_time, weight_ve])
 
@@ -243,7 +243,7 @@ class Ped(Agent):
             weights = self.stochastic_weights()
             cas_attrs = self.cas_attributes_dft()
         else:
-            weights = np.array([self._aw, 1-self._aw])
+            weights = np.array([self._alpha, 1-self._alpha])
             cas_attrs = self.cas_attributes_sampling()
 
         utilities = np.matmul(cas_attrs, weights)
@@ -391,7 +391,7 @@ class Ped(Agent):
 
 
 class CrossingModel(Model):
-    def __init__(self, ped_origin, ped_destination, road_length, road_width, vehicle_flow, alpha, gamma, ped_speed, lam, aw, a_rate):
+    def __init__(self, ped_origin, ped_destination, road_length, road_width, vehicle_flow, epsilon, gamma, ped_speed, lam, alpha, a_rate):
         self.schedule = RandomActivation(self)
         self.running = True
         self.nsteps = 0
@@ -409,7 +409,7 @@ class CrossingModel(Model):
 
         i = 0
         model_type = 'sampling'
-        self.ped = Ped(i, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, alpha = alpha, gamma = gamma, lam = lam, aw = aw, a_rate = a_rate, model_type = model_type)
+        self.ped = Ped(i, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, epsilon = epsilon, gamma = gamma, lam = lam, alpha = alpha, a_rate = a_rate, model_type = model_type)
         self.schedule.add(self.ped)
 
         self.datacollector = DataCollector(agent_reporters={"CrossingType": "chosenCAType"})
