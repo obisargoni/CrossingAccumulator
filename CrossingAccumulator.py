@@ -43,7 +43,7 @@ class CrossingAlternative(Agent):
 
     def getVehicleFlow(self, t = None):
         if self._ctype == 'unmarked':
-            if isinstance(self._vehicle_flow, int):
+            if isinstance(self._vehicle_flow, (int, float)):
                 return self._vehicle_flow
             else:
                 return self._vehicle_flow[t]
