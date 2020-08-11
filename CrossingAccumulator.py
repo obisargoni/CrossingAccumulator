@@ -409,8 +409,9 @@ class CrossingModel(Model):
         self.choice_step = None
 
     def step(self):
-        self.nsteps += 1
         self.datacollector.collect(self)
         self.schedule.step()
         if self.schedule.get_agent_count() == 0:
             self.running = False
+        self.nsteps += 1
+
