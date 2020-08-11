@@ -347,22 +347,14 @@ class Ped(Agent):
 
         # Get the indices of crossing alternatives whose activation is above the threshold value
         ca_activations = self._ca_activation_history[history_index]
-        dominant_indices = np.where(ca_activations > self._epsilon)
-
-        # Select the nearest of these
-        min_dist = sys.float_info.max
-        nearest_ca = None
-        for i in dominant_indices[0]:
-            dom_ca = self._crossing_alternatives[i]
-        
-            if (self.caLoc(dom_ca) < min_dist):
-                min_dist = self.caLoc(dom_ca)
-                nearest_ca = dom_ca
+        sorted_activations = np.sort(ca_activations)
 
 
-        # If nearest dominant ca identified set as chosen option
-        if nearest_ca is not None:
-            self._chosen_ca = nearest_ca
+        # Check whether the largest activation is greater than second largest by threshold amount
+        # If it is then select largest
+        if (sorted_activations[-1] - sorted_activations[-2]) > self._epsilon:
+            ca_i = np.argmax(ca_activations)
+            self._chosen_ca = self._crossing_alternatives[ca_i]
             self.model.choice_step = self.model.nsteps
 
 
