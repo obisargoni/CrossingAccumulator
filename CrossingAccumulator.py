@@ -347,8 +347,8 @@ class Ped(Agent):
 
         # Get the indices of crossing alternatives whose activation is above the threshold value
         ca_activations = self._ca_activation_history[history_index]
-        dom_threshold = np.nanmean(ca_activations) * self._alpha
-        dominant_indices = np.where( ca_activations > dom_threshold)
+        dom_threshold = np.nanmean(ca_activations) * self._epsilon
+        dominant_indices = np.where( (ca_activations > dom_threshold) & (ca_activations > 1))
 
         # Select the nearest of these
         min_dist = sys.float_info.max
