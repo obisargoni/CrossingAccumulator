@@ -119,7 +119,7 @@ def plot_dists_and_probs(df, cols, labels, title, title_suffix, ylab1 = None, yl
 	fig.legend(h1+h2,l1+l2,loc=4)
 	return fig
 
-def plot_two_series(df, cols, labels, title, title_suffix, x=None, vehicle_flow_col = None, dict_markers = None):
+def plot_two_series(df, cols, labels, title, title_suffix, error_cols = None, x=None, vehicle_flow_col = None, dict_markers = None, xlab = None, ylab = None):
 	if x is not None:
 		df.set_index(x, inplace=True)
 	
@@ -127,18 +127,33 @@ def plot_two_series(df, cols, labels, title, title_suffix, x=None, vehicle_flow_
 
 	fig.gca().set_title(title+title_suffix)
 
-	ax = df[cols[0]].plot(color='blue', label=labels[0])
-	ax = df[cols[1]].plot(color='red', secondary_y=False, label=labels[1])
+	if error_cols is None:
+		ax = df[cols[0]].plot(color='blue', label=labels[0])
+		ax = df[cols[1]].plot(color='red', secondary_y=False, label=labels[1])
+	else:
+		ax = df[cols[0]].plot(color='blue', label=labels[0])
+		ax = ax.fill_between(df.index, df[cols[0]] - df[error_cols[0]], df[cols[0]] + df[error_cols[0]], color = 'blue', alpha = 0.5)
+		ax = df[cols[1]].plot(color='red', secondary_y=False, label=labels[1])
+		ax = ax.fill_between(df.index, df[cols[1]] - df[error_cols[1]], df[cols[1]] + df[error_cols[1]], color = 'red', alpha = 0.5)
 
 	if vehicle_flow_col is not None:
 		ax = df[vehicle_flow_col].plot(color='black', linestyle = 'dotted', label=vehicle_flow_col)
+
+	if ylab is not None:
+		ax.set_ylabel(ylab)
+	if xlab is not None:
+		ax.set_xlabel(xlab)
 
 	h1, l1 = ax.get_legend_handles_labels()
 
 	# Add marker for positions of zebra crossing and destination
 	for k,v in dict_markers.items():
 		plt.axvline(v, linestyle = '--', linewidth = 0.5)
-		plt.annotate(k, (v+1, ax.get_ylim()[0]))
+		if k == 'Choice\nMade':
+			plt.annotate(k, (v-4, ax.get_ylim()[0]+0.1))
+		else:
+			plt.annotate(k, (v+0.5, ax.get_ylim()[0]+0.1))
+
 
 	fig.legend(h1,l1,loc=4)
 	return fig
@@ -152,7 +167,7 @@ mid_block_type = 'unmarked'
 ped_start_location = 0
 ped_walking_speed = 3
 gamma = 0.9
-epsilon = 1.9
+epsilon = 2
 lam = 1
 a_rate = 1
 dest = road_length/3
@@ -227,17 +242,17 @@ lam = 1
 alpha = 0.5
 vf = v_vary_low
 suffs = " lam:{}, alpha:{}".format(lam, alpha)
-model = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_flow = vf, 
+model_vlow = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_flow = vf, 
 						epsilon = epsilon, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, alpha = alpha, a_rate = a_rate)
-while model.running:
-	model.step()
+while model_vlow.running:
+	model_vlow.step()
 
-# Get the utilities and attributes from the model
+# Get the utilities and attributes from the model_vlow
 ped_cost_cols = ['unmarked_wt','unmarked_ve', 'zebra_wt', 'zebra_ve']
 ped_utility_cols = ['unmarked_u','zebra_u']
 
-df_attrs = pd.DataFrame(columns = ped_cost_cols, data = model.ped._ca_costs_history[1:])
-df_utilities = pd.DataFrame(columns = ped_utility_cols, data = model.ped._ca_utility_history[1:])
+df_attrs = pd.DataFrame(columns = ped_cost_cols, data = model_vlow.ped._ca_costs_history[1:])
+df_utilities = pd.DataFrame(columns = ped_utility_cols, data = model_vlow.ped._ca_utility_history[1:])
 
 df_u_a = pd.merge(df_utilities, df_attrs, left_index = True, right_index = True)
 df_u_a['Vehicle Flow'] = vf
@@ -255,10 +270,48 @@ fig_u_a.savefig(".\\img\\attrs_utilities_a0.5_v_vary.png")
 ##############################
 activation_cols = ['unmarked_a','zebra_a']
 activation_labels = ['Unmaked Activation', 'Unsignalised Activation']
-df_activations = pd.DataFrame(columns = activation_cols, data = model.ped.getActivationHistory()[1:])
-df_activations['Vehicle Flow'] = vf
+df_activations = pd.DataFrame(columns = activation_cols, data = model_vlow.ped.getActivationHistory()[1:])
+df_activations['Vehicle Flow'] = v_vary_low
 
-dict_markers['Choice Made'] = model.choice_step
-f_act = plot_two_series(df_activations, activation_cols, activation_labels, 'Accumulated Activation with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', dict_markers = dict_markers)
+# Add in rolling errors
+# Doesn't make sense to calculate sd of trend data
+'''
+df_activations['unmarked_sd'] = df_activations['unmarked_a'].expanding(1).std()
+df_activations['zebra_sd'] = df_activations['zebra_a'].expanding(1).std()
+error_cols = ['unmarked_sd', 'zebra_sd']
+'''
+
+dict_markers['Choice\nMade'] = model_vlow.choice_step
+f_act = plot_two_series(df_activations, activation_cols, activation_labels, 'Accumulated Activation with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', dict_markers = dict_markers, ylab = 'Activation', xlab = 'Tick')
 f_act.show()
 f_act.savefig(".\\img\\activation_a0.5_v_vary.png")
+
+
+
+#################################
+#
+# Run model_vhigh with higher vehicle flow, shorter gap, show choice made is different
+#
+#################################
+gap_size = 3
+v_vary_high = [3]*road_length
+for i in range(-gap_size, gap_size):
+	ind = int(dest + i)
+	v_vary_high[ind]=0
+
+lam = 1
+alpha = 0.5
+vf = v_vary_high
+suffs = " lam:{}, alpha:{}".format(lam, alpha)
+model_vhigh = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_flow = vf, 
+						epsilon = epsilon, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, alpha = alpha, a_rate = a_rate)
+while model_vhigh.running:
+	model_vhigh.step()
+
+df_activations = pd.DataFrame(columns = activation_cols, data = model_vhigh.ped.getActivationHistory()[1:])
+df_activations['Vehicle Flow'] = v_vary_high
+
+dict_markers['Choice\nMade'] = model_vhigh.choice_step
+f_act = plot_two_series(df_activations, activation_cols, activation_labels, 'Accumulated Activation with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', dict_markers = dict_markers, ylab = 'Activation', xlab = 'Tick')
+f_act.show()
+f_act.savefig(".\\img\\activation_a0.5_v_vary_high.png")
