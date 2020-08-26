@@ -189,7 +189,7 @@ labels = ['Unmarked $d_j$','Unmarked probability', 'Unsignalised $d_j$','Unsigna
 
 fig_probs_sals = plot_dists_and_probs(df_data, cols, labels, "Sampling Probabilities", "", ylab1 = "$d_j$", ylab2 = "p", xlab = "$x_{ped}$", dict_markers = dict_markers)
 fig_probs_sals.show()
-fig_probs_sals.savefig(".\\img\\distances_probabilities_l1.png")
+#fig_probs_sals.savefig(".\\img\\distances_probabilities_l1.png")
 
 
 #################################
@@ -223,7 +223,7 @@ df_u_r0_v2 = pd.DataFrame(columns = utility_costs_cols, data = utility_r0_v0)
 dict_markers['Destination'] = dest
 fig_u_r0_v2 = plot_utilities_and_costs(df_u_r0_v2, utility_costs_cols[:-1], utility_costs_labels[:-1], 'Attributes and Utilities', "\n $\\alpha$ = {}".format(0.5), xlab = "$x_{ped}$", dict_markers =dict_markers)
 fig_u_r0_v2.show()
-fig_u_r0_v2.savefig(".\\img\\attrs_utilities_a0.5_v0.5.png")
+#fig_u_r0_v2.savefig(".\\img\\attrs_utilities_a0.5_v0.5.png")
 
 
 
@@ -259,7 +259,7 @@ df_u_a['Vehicle Flow'] = vf
 
 fig_u_a= plot_utilities_and_costs(df_u_a, utility_costs_cols[:-1], utility_costs_labels[:-1], 'Attributes and Utilities with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', xlab = "$x_{ped}$", dict_markers =dict_markers)
 fig_u_a.show()
-fig_u_a.savefig(".\\img\\attrs_utilities_a0.5_v_vary.png")
+#fig_u_a.savefig(".\\img\\attrs_utilities_a0.5_v_vary.png")
 
 
 
@@ -284,7 +284,7 @@ error_cols = ['unmarked_sd', 'zebra_sd']
 dict_markers['Choice\nMade'] = model_vlow.choice_step
 f_act = plot_two_series(df_activations, activation_cols, activation_labels, 'Accumulated Activation with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', dict_markers = dict_markers, ylab = 'Activation', xlab = 'Tick')
 f_act.show()
-f_act.savefig(".\\img\\activation_a0.5_v_vary.png")
+#f_act.savefig(".\\img\\activation_a0.5_v_vary.png")
 
 
 
@@ -314,4 +314,4 @@ df_activations['Vehicle Flow'] = v_vary_high
 dict_markers['Choice\nMade'] = model_vhigh.choice_step
 f_act = plot_two_series(df_activations, activation_cols, activation_labels, 'Accumulated Activation with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', dict_markers = dict_markers, ylab = 'Activation', xlab = 'Tick')
 f_act.show()
-f_act.savefig(".\\img\\activation_a0.5_v_vary_high.png")
+#f_act.savefig(".\\img\\activation_a0.5_v_vary_high.png")
