@@ -82,7 +82,7 @@ class Ped(Agent):
         self._model_type = model_type
 
         self._loc = location
-        self._speed = speed
+        self._speed = 1
         self._dest = destination
 
         self._road_length = road_length
