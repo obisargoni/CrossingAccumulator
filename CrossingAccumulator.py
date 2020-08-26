@@ -296,13 +296,16 @@ class Ped(Agent):
             # Decay accumulated activations
             ca_activations = np.matmul(self._S, ca_activations) + np.sign(np.matmul(self._C, u))
         else:
-            # Sample crossing alternatives according to their salience
             salience_factors = self.ca_salience_factors_softmax(salience_type = 'ca')
-            i = np.random.choice(len(salience_factors), p= salience_factors)
-
+            
             # Get matrix used to make activation only accumulate for the sampled crossing alternative
             _C = np.zeros((len(salience_factors), len(salience_factors)))
-            _C[i,i] = 1
+
+            # Sample crossing alternatives according to their salience. each alternative has opportunity of being sampled
+            for i, sf in enumerate(salience_factors):
+                if np.random.rand() <= sf:
+                    # Select this crossing alternative as one to increase activation for
+                    _C[i,i] = 1
 
             ca_activations = np.matmul(self._S, ca_activations) + np.matmul(_C, u)
 
