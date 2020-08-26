@@ -12,7 +12,6 @@ from mesa.time import RandomActivation
 class CrossingAlternative(Agent):
 
     _loc = None
-    _wait_time = None
     _ctype = None
     _name = None
 
@@ -31,9 +30,6 @@ class CrossingAlternative(Agent):
 
     def getLoc(self):
         return self._loc
-
-    def getWaitTime(self):
-        return self._wait_time
 
     def getName(self):
         return self._name
