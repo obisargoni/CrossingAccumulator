@@ -296,8 +296,8 @@ class Ped(Agent):
             # Decay accumulated activations
             ca_activations = np.matmul(self._S, ca_activations) + np.sign(np.matmul(self._C, u))
         else:
-            salience_factors = self.ca_salience_factors_softmax(salience_type = 'ca')
-            
+            salience_factors = self.ca_salience_factors_softmax(salience_type = 'dest')
+
             # Get matrix used to make activation only accumulate for the sampled crossing alternative
             _C = np.zeros((len(salience_factors), len(salience_factors)))
 
