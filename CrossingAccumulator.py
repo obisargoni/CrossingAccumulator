@@ -167,6 +167,18 @@ class Ped(Agent):
 
         return ww_time
 
+    def ca_detour_time(self, ca):
+        '''The time difference between using the crossing alternative and walking directly to the destination
+        via an unmarked crossing
+        '''
+        ca_loc = self.caLoc(ca)
+
+        d_ca = abs(self._loc - ca_loc) + abs(ca_loc - self._dest)
+
+        detour_dist = d_ca - abs(self._dest - self._loc)
+
+        return detour_dist/self._speed
+
 
     def ca_vehicle_exposure_fd(self, ca):
         '''Get vehicle exposure fractional difference from characteristic vehicle, 
@@ -187,7 +199,7 @@ class Ped(Agent):
         '''Get walk time fractional difference from characteristic walk time, 
         chosen to be the time taken to walk the length of the road.
         '''
-        wt = self.ca_walk_time(ca)
+        wt = self.ca_detour_time(ca)
         char_wt = self._road_length / self._speed
 
         return (1-wt/char_wt)
