@@ -26,7 +26,7 @@ class CrossingAlternative(Agent):
         self._name = name
         self._vehicle_flow = vehicle_flow
 
-        self._av_flow = 1
+        self._av_flow = 2
 
     def getLoc(self):
         return self._loc

@@ -200,8 +200,11 @@ fig_probs_sals.savefig(".\\img\\distances_probabilities_l1.png")
 
 # update vehicle flow of crossing alternatives
 # Increase vehcile flow
-zebra._vehicle_flow = 0.5
-unmarked._vehicle_flow = 0.5
+v_flow_low = 1
+v_flow_high = 3
+
+zebra._vehicle_flow = v_flow_low
+unmarked._vehicle_flow = v_flow_low
 
 pedhalf = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, 
 			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, epsilon = epsilon, gamma = gamma, lam = lam, alpha = 0.5, a_rate = 1)
@@ -220,10 +223,12 @@ for i in range(1,50):
 	utility_r0_v0 = np.append(utility_r0_v0, [ui], axis=0)
 
 df_u_r0_v2 = pd.DataFrame(columns = utility_costs_cols, data = utility_r0_v0)
+df_u_r0_v2['Vehicle Flow'] = v_flow_low
+
 dict_markers['Destination'] = dest
-fig_u_r0_v2 = plot_utilities_and_costs(df_u_r0_v2, utility_costs_cols[:-1], utility_costs_labels[:-1], 'Attributes and Utilities', "\n $\\alpha$ = {}".format(0.5), xlab = "$x_{ped}$", dict_markers =dict_markers)
+fig_u_r0_v2 = plot_utilities_and_costs(df_u_r0_v2, utility_costs_cols[:-1], utility_costs_labels[:-1], 'Attributes and Utilities', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', xlab = "$x_{ped}$", dict_markers =dict_markers)
 fig_u_r0_v2.show()
-fig_u_r0_v2.savefig(".\\img\\attrs_utilities_a0.5_v0.5.png")
+fig_u_r0_v2.savefig(".\\img\\attrs_utilities_a0.5_vlow.png")
 
 
 
@@ -233,7 +238,7 @@ fig_u_r0_v2.savefig(".\\img\\attrs_utilities_a0.5_v0.5.png")
 #
 ################################
 gap_size = 5
-v_vary_low = [0.5]*road_length
+v_vary_low = [v_flow_low]*road_length
 for i in range(-gap_size, gap_size):
 	ind = int(dest + i)
 	v_vary_low[ind]=0
@@ -259,7 +264,7 @@ df_u_a['Vehicle Flow'] = vf
 
 fig_u_a= plot_utilities_and_costs(df_u_a, utility_costs_cols[:-1], utility_costs_labels[:-1], 'Attributes and Utilities with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', xlab = "$x_{ped}$", dict_markers =dict_markers)
 fig_u_a.show()
-fig_u_a.savefig(".\\img\\attrs_utilities_a0.5_v_vary.png")
+fig_u_a.savefig(".\\img\\attrs_utilities_a0.5_v_vary_low.png")
 
 
 
@@ -284,7 +289,7 @@ error_cols = ['unmarked_sd', 'zebra_sd']
 dict_markers['Choice\nMade'] = model_vlow.choice_step
 f_act = plot_two_series(df_activations, activation_cols, activation_labels, 'Accumulated Activation with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', dict_markers = dict_markers, ylab = 'Activation', xlab = 'Tick')
 f_act.show()
-f_act.savefig(".\\img\\activation_a0.5_v_vary.png")
+f_act.savefig(".\\img\\activation_a0.5_v_vary_low.png")
 
 
 
@@ -294,7 +299,7 @@ f_act.savefig(".\\img\\activation_a0.5_v_vary.png")
 #
 #################################
 gap_size = 3
-v_vary_high = [3]*road_length
+v_vary_high = [v_flow_high]*road_length
 for i in range(-gap_size, gap_size):
 	ind = int(dest + i)
 	v_vary_high[ind]=0
