@@ -171,7 +171,7 @@ epsilon = 2
 lam = 1
 a_rate = 1
 dest = road_length/3
-dict_markers = {'Unsignalised\nCrossing':zebra_location}
+dict_markers = {'Dedicated\nCrossing':zebra_location}
 
 zebra = CrossingAlternative(0, None, location = zebra_location, ctype = zebra_type, name = 'z1', vehicle_flow = 0)
 unmarked = CrossingAlternative(1, None, ctype = mid_block_type, name = 'mid1', vehicle_flow = 0)
@@ -185,7 +185,7 @@ dict_data = ped_salience_distance_and_factors(ped, 50, salience_type = 'ca')
 df_data = pd.merge(dict_data['salience_distances'], dict_data['salience_factors'], on = 'loc', suffixes = ('_dist', '_prob'))
 
 cols = ['unmarked_dist','unmarked_prob', 'zebra_dist','zebra_prob']
-labels = ['Unmarked $d_j$','Unmarked probability', 'Unsignalised $d_j$','Unsignalised probability']
+labels = ['Informal $d_j$','Informal probability', 'Dedicated $d_j$','Dedicated probability']
 
 fig_probs_sals = plot_dists_and_probs(df_data, cols, labels, "Sampling Probabilities", "", ylab1 = "$d_j$", ylab2 = "p", xlab = "$P(t)$", dict_markers = dict_markers)
 fig_probs_sals.show()
@@ -210,7 +210,7 @@ pedhalf = Ped(0, None, location = 0, speed = ped_walking_speed, destination = de
 			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, epsilon = epsilon, gamma = gamma, lam = lam, alpha = 0.5, a_rate = 1)
 
 utility_costs_cols = ['unmarked_u','zebra_u', 'unmarked_wt', 'zebra_wt', 'unmarked_ve', 'zebra_ve', 'loc']
-utility_costs_labels = ['Unmarked Utility','Unsignalised Utility', 'Unmarked Time Attr.', 'Unsignalised Time Attr.', 'Unmarked Exposure Attr.', 'Unsignalised Exposure Attr.', 'loc']
+utility_costs_labels = ['Informal Utility','Dedicated Utility', 'Informal Time Attr.', 'Dedicated Time Attr.', 'Informal Exposure Attr.', 'Dedicated Exposure Attr.', 'loc']
 
 # Get utility for 0 vehicle flow and compare to costs for 5 vehicle flow
 model = 'sampling'
@@ -274,7 +274,7 @@ fig_u_a.savefig(".\\img\\attrs_utilities_a0.5_v_vary_low.png")
 #
 ##############################
 activation_cols = ['unmarked_a','zebra_a']
-activation_labels = ['Unmarked Activation', 'Unsignalised Activation']
+activation_labels = ['Informal Crossing', 'Dedicated Crossing']
 df_activations = pd.DataFrame(columns = activation_cols, data = model_vlow.ped.getActivationHistory()[1:])
 df_activations['Vehicle Flow'] = v_vary_low
 
@@ -287,7 +287,7 @@ error_cols = ['unmarked_sd', 'zebra_sd']
 '''
 
 dict_markers['Choice\nMade'] = model_vlow.choice_step
-f_act = plot_two_series(df_activations, activation_cols, activation_labels, 'Accumulated Activation with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', dict_markers = dict_markers, ylab = 'Activation', xlab = 'Tick')
+f_act = plot_two_series(df_activations, activation_cols, activation_labels, 'Accumulated Activation with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', dict_markers = dict_markers, ylab = 'Activation', xlab = 'P(t)')
 f_act.show()
 f_act.savefig(".\\img\\activation_a0.5_v_vary_low.png")
 
@@ -317,6 +317,6 @@ df_activations = pd.DataFrame(columns = activation_cols, data = model_vhigh.ped.
 df_activations['Vehicle Flow'] = v_vary_high
 
 dict_markers['Choice\nMade'] = model_vhigh.choice_step
-f_act = plot_two_series(df_activations, activation_cols, activation_labels, 'Accumulated Activation with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', dict_markers = dict_markers, ylab = 'Activation', xlab = 'Tick')
+f_act = plot_two_series(df_activations, activation_cols, activation_labels, 'Accumulated Activation with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', dict_markers = dict_markers, ylab = 'Activation', xlab = 'P(t)')
 f_act.show()
 f_act.savefig(".\\img\\activation_a0.5_v_vary_high.png")
