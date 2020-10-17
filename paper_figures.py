@@ -81,7 +81,7 @@ def plot_utilities_and_costs(df, cols, labels, title, title_suffix, vehicle_flow
 	# Add marker for positions of zebra crossing and destination
 	for k,v in dict_markers.items():
 		plt.axvline(v, linestyle = '--', linewidth = 0.5, color = 'grey')
-		plt.annotate(k, (v - 7, ax.get_ylim()[0] + 0.05), xycoords = 'data')
+		plt.annotate(k, (v - 6, ax.get_ylim()[0] + 0.07), xycoords = 'data')
 
 	fig.legend(h1,l1,loc=4)
 	return fig
@@ -114,7 +114,7 @@ def plot_dists_and_probs(df, cols, labels, title, title_suffix, ylab1 = None, yl
 	# Add marker for positions of zebra crossing and destination
 	for k,v in dict_markers.items():
 		plt.axvline(v, linestyle = '--', linewidth = 0.5, color = 'grey')
-		plt.annotate(k, (v - 7, ax2.get_ylim()[0] + 0.02), xycoords = 'data')
+		plt.annotate(k, (v - 5.3, ax2.get_ylim()[0] + 0.02), xycoords = 'data')
 
 	fig.legend(h1+h2,l1+l2,loc=4)
 	return fig
@@ -150,7 +150,7 @@ def plot_two_series(df, cols, labels, title, title_suffix, error_cols = None, x=
 	for k,v in dict_markers.items():
 		plt.axvline(v, linestyle = '--', linewidth = 0.5)
 		if k == 'Choice\nMade':
-			plt.annotate(k, (v-4, ax.get_ylim()[0]+0.1))
+			plt.annotate(k, (v-3.5, ax.get_ylim()[0]+0.1))
 		else:
 			plt.annotate(k, (v+0.5, ax.get_ylim()[0]+0.1))
 
