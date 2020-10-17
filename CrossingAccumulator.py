@@ -1,6 +1,8 @@
 # Testing out accumulator model of crossing option choice
 
 import numpy as np
+np.random.seed(3)
+
 import scipy.special
 from scipy.stats import bernoulli
 import sys
