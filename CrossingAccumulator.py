@@ -1,7 +1,7 @@
 # Testing out accumulator model of crossing option choice
 
 import numpy as np
-np.random.seed(3)
+np.random.seed(11)
 
 import scipy.special
 from scipy.stats import bernoulli
@@ -65,6 +65,7 @@ class Ped(Agent):
 
     _road_length = None
     _road_width = None
+    _road = None
 
     _lambda = None # Used to control effect of salience distance on contribution of option utility to activation
     _alpha = None # Controls sensitivity to traffic exposure
@@ -87,6 +88,7 @@ class Ped(Agent):
         self._speed = 1
         self._dest = destination
 
+        self._road=road
         self._road_length = road.length
         self._road_width = road.width
 
@@ -196,6 +198,9 @@ class Ped(Agent):
         
         return (1 - ve/av_ve)
 
+    def ca_vehicle_exposure_binary(self, ca):
+        return self._road.ca_vehicle_conflict(ca, self._loc, self._speed)
+
 
     def ca_walk_time_fd(self, ca):
         '''Get walk time fractional difference from characteristic walk time, 
@@ -229,7 +234,7 @@ class Ped(Agent):
     def cas_attributes_sampling(self):
         cas_attr = []
         for ca in self._crossing_alternatives:
-            ca_attr = np.array([self.ca_walk_time_fd(ca), self.ca_vehicle_exposure_fd(ca)])
+            ca_attr = np.array([self.ca_walk_time_fd(ca), self.ca_vehicle_exposure_binary(ca)]) # was previously ca_vehicle_exposure_fd
             cas_attr.append(ca_attr)
 
         return np.array(cas_attr)
@@ -414,7 +419,7 @@ class Road(Agent):
     _vf=None
     _vs = None
 
-    def __init__(self, unique_id, model, length, width, crossing_altertives, vehicle_frequency):
+    def __init__(self, unique_id, model, length, width, crossing_altertives, vehicle_frequency, vehicle_speed = 10):
         super().__init__(unique_id, model)
         self._l = length
         self._w = width
@@ -422,7 +427,7 @@ class Road(Agent):
         self._vf = vehicle_frequency
         self._vs = [] # initialise list of vehicles
 
-        self._vspeed = 3
+        self._vspeed = vehicle_speed
 
     def step(self):
         '''Update position of vehicles and remove them from road if they reach the end of the road.
@@ -436,6 +441,34 @@ class Road(Agent):
         if np.random.rand() > self._vf:
             v = Vehicle(0, self._vspeed)
             self._vs.append(v)
+
+    def ca_vehicle_conflict(self, ca, ped_loc, ped_speed):
+        if ca.getCrossingType() == 'unmarked':
+
+            # Calculate time it would take pedestrian to cross the road
+            t_cross = self._w / ped_speed
+
+            ca_loc = ca.getLoc()
+            if ca_loc is None:
+                ca_loc = ped_loc
+            
+            # loop through vehicles and see if any of them would pass through crossing in this time
+            count = 0
+            for v in self._vs:
+                # exclude vehicle if they are already ahead of the crossing
+                if v.x>ca_loc:
+                    continue
+
+                x_tcross = v.x + (t_cross*v.s)
+                if x_tcross>ca_loc:
+                    count+=1
+
+            if count>0:
+                return 0
+            else:
+                return 1
+        else:
+            return 1.0
 
     def getCAs(self):
         return self._cas
@@ -467,7 +500,7 @@ class CrossingModel(Model):
         crossing_altertives = np.array([unmarked,zebra])
 
         i=0
-        road = Road(i, self, length=road_length, width=road_width, crossing_altertives=crossing_altertives, vehicle_frequency=0.1)
+        road = Road(i, self, length=road_length, width=road_width, crossing_altertives=crossing_altertives, vehicle_frequency=0.1, vehicle_speed=10)
 
         model_type = 'sampling'
         #self.ped = Ped(i+1, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, epsilon = epsilon, gamma = gamma, lam = lam, alpha = alpha, a_rate = a_rate, model_type = model_type)
