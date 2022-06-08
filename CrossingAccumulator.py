@@ -78,7 +78,7 @@ class Ped(Agent):
     _chosen_ca = None
     _ca_activation_history = None
 
-    def __init__(self, unique_id, model, location, speed, destination, crossing_altertives, road_length, road_width, epsilon, gamma, lam, alpha, a_rate, model_type = 'sampling'):
+    def __init__(self, unique_id, model, location, speed, destination, road, epsilon, gamma, lam, alpha, a_rate, model_type = 'sampling'):
         super().__init__(unique_id, model)
 
         self._model_type = model_type
@@ -87,8 +87,8 @@ class Ped(Agent):
         self._speed = 1
         self._dest = destination
 
-        self._road_length = road_length
-        self._road_width = road_width
+        self._road_length = road.length
+        self._road_width = road.width
 
         self._lambda = lam
         self._alpha = alpha # Patameter that controls weight walk time vs crossing exposure in ca utility calculation
@@ -100,7 +100,7 @@ class Ped(Agent):
         self._crossing_alternatives = np.array([])
         self._ped_salience_factors = np.array([])
 
-        for ca in crossing_altertives:
+        for ca in road.getCAs():
             self.add_crossing_alternative(ca)
 
         # At time step 0 accumulated utilities are 0
@@ -391,8 +391,66 @@ class Ped(Agent):
             return self.getChosenCA().getCrossingType()
 
 
+class Vehicle():
+    _s = None
+    _x = None
+
+    def __init__(self, speed, xpos):
+        self._s = speed
+        self._x = xpos
+
+    def drive(self):
+        self._x+=self._s
+
+    @property
+    def x(self):
+        return self._x
+    
+
+class Road(Agent):
+    _l = None
+    _w = None
+    _cas = None
+    _vf=None
+    _vs = None
+
+    def __init__(self, unique_id, model, length, width, crossing_altertives, vehicle_frequency):
+        super().__init__(unique_id, model)
+        self._l = length
+        self._w = width
+        self._cas = crossing_altertives
+        self._vf = vehicle_frequency
+        self._vs = [] # initialise list of vehicles
+
+        self._vspeed = 3
+
+    def step(self):
+        '''Update position of vehicles and remove them from road if they reach the end of the road.
+        '''
+        for v in self._vs:
+            v.drive()
+            if v.x >= self._l:
+                self._vs.remove(v)
+
+        # Add new vehicles to the road
+        if np.random.rand() > self._vf:
+            v = Vehicle(0, self._vspeed)
+            self._vs.append(v)
+
+    def getCAs(self):
+        return self._cas
+
+    @property
+    def length(self):
+        return self._l
+
+    @property
+    def width(self):
+        return self._w
+    
+
 class CrossingModel(Model):
-    def __init__(self, ped_origin, ped_destination, road_length, road_width, vehicle_flow, epsilon, gamma, ped_speed, lam, alpha, a_rate):
+    def __init__(self, ped_origin, ped_destination, road_length, road_width, vehicle_flow, epsilon, gamma, ped_speed, lam, alpha, a_rate, seed=3):
         self.schedule = RandomActivation(self)
         self.running = True
         self.nsteps = 0
@@ -408,9 +466,12 @@ class CrossingModel(Model):
         # Crossing alternatives with salience factors
         crossing_altertives = np.array([unmarked,zebra])
 
-        i = 0
+        i=0
+        road = Road(i, self, length=road_length, width=road_width, crossing_altertives=crossing_altertives, vehicle_frequency=0.1)
+
         model_type = 'sampling'
-        self.ped = Ped(i, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, epsilon = epsilon, gamma = gamma, lam = lam, alpha = alpha, a_rate = a_rate, model_type = model_type)
+        #self.ped = Ped(i+1, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, epsilon = epsilon, gamma = gamma, lam = lam, alpha = alpha, a_rate = a_rate, model_type = model_type)
+        self.ped = Ped(i+1, self, location = ped_origin, speed = ped_speed, destination = ped_destination, road = road, epsilon = epsilon, gamma = gamma, lam = lam, alpha = alpha, a_rate = a_rate, model_type = model_type)
         self.schedule.add(self.ped)
 
         self.datacollector = DataCollector(agent_reporters={"CrossingType": "chosenCAType"})

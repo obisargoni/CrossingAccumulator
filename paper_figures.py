@@ -9,7 +9,7 @@ from mesa.batchrunner import BatchRunner
 from importlib import reload
 import CrossingAccumulator
 CrossingAccumulator = reload(CrossingAccumulator)
-from CrossingAccumulator import CrossingModel, CrossingAlternative, Ped
+from CrossingAccumulator import CrossingModel, CrossingAlternative, Ped, Road
 
 ##################################
 #
@@ -177,7 +177,10 @@ zebra = CrossingAlternative(0, None, location = zebra_location, ctype = zebra_ty
 unmarked = CrossingAlternative(1, None, ctype = mid_block_type, name = 'mid1', vehicle_flow = 0)
 crossing_altertives = [unmarked, zebra]
 
-ped = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, epsilon = 1.2, gamma = 0.9, lam = lam, alpha = 0.5, a_rate = 1)
+i=0
+road = Road(i, None, length=road_length, width=road_width, crossing_altertives=crossing_altertives, vehicle_frequency=0.1)
+
+ped = Ped(i+1, None, location = 0, speed = ped_walking_speed, destination = dest, road=road, epsilon = 1.2, gamma = 0.9, lam = lam, alpha = 0.5, a_rate = 1)
 
 dict_data = ped_salience_distance_and_factors(ped, 50, salience_type = 'ca')
 
@@ -206,8 +209,7 @@ v_flow_high = 3
 zebra._vehicle_flow = v_flow_low
 unmarked._vehicle_flow = v_flow_low
 
-pedhalf = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, 
-			crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, epsilon = epsilon, gamma = gamma, lam = lam, alpha = 0.5, a_rate = 1)
+pedhalf = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, road=road, epsilon = epsilon, gamma = gamma, lam = lam, alpha = 0.5, a_rate = 1)
 
 utility_costs_cols = ['unmarked_u','zebra_u', 'unmarked_wt', 'zebra_wt', 'unmarked_ve', 'zebra_ve', 'loc']
 utility_costs_labels = ['Informal Utility','Dedicated Utility', 'Informal Time Attr.', 'Dedicated Time Attr.', 'Informal Exposure Attr.', 'Dedicated Exposure Attr.', 'loc']
@@ -247,8 +249,7 @@ lam = 1
 alpha = 0.5
 vf = v_vary_low
 suffs = " lam:{}, alpha:{}".format(lam, alpha)
-model_vlow = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_flow = vf, 
-						epsilon = epsilon, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, alpha = alpha, a_rate = a_rate)
+model_vlow = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_flow = vf, epsilon = epsilon, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, alpha = alpha, a_rate = a_rate)
 while model_vlow.running:
 	model_vlow.step()
 
@@ -308,8 +309,7 @@ lam = 1
 alpha = 0.5
 vf = v_vary_high
 suffs = " lam:{}, alpha:{}".format(lam, alpha)
-model_vhigh = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_flow = vf, 
-						epsilon = epsilon, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, alpha = alpha, a_rate = a_rate)
+model_vhigh = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_flow = vf, epsilon = epsilon, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, alpha = alpha, a_rate = a_rate)
 while model_vhigh.running:
 	model_vhigh.step()
 
