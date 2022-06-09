@@ -3,6 +3,9 @@
 import numpy as np
 np.random.seed(11)
 
+global random_state
+random_state = np.random.get_state()
+
 import scipy.special
 from scipy.stats import bernoulli
 import sys
@@ -18,15 +21,14 @@ class CrossingAlternative(Agent):
     _name = None
 
     _vehicle_flow = None
-    _av_flow = None
+    _av_flow = 0
 
-    def __init__(self, unique_id, model, location = None, wait_time = None, ctype = None, name = None, vehicle_flow = None):
+    def __init__(self, unique_id, model, location = None, wait_time = None, ctype = None, name = None):
         super().__init__(unique_id, model)
         self._loc = location
         self._wait_time = wait_time
         self._ctype = ctype
         self._name = name
-        self._vehicle_flow = vehicle_flow
 
         self._av_flow = 2
 
@@ -199,7 +201,8 @@ class Ped(Agent):
         return (1 - ve/av_ve)
 
     def ca_vehicle_exposure_binary(self, ca):
-        return self._road.ca_vehicle_conflict(ca, self._loc, self._speed)
+        val = self._road.ca_vehicle_conflict(ca, self._loc, self._speed)
+        return val
 
 
     def ca_walk_time_fd(self, ca):
@@ -400,7 +403,7 @@ class Vehicle():
     _s = None
     _x = None
 
-    def __init__(self, speed, xpos):
+    def __init__(self, xpos, speed):
         self._s = speed
         self._x = xpos
 
@@ -410,24 +413,31 @@ class Vehicle():
     @property
     def x(self):
         return self._x
+
+    @property
+    def speed(self):
+        return self._s
+    
     
 
 class Road(Agent):
     _l = None
     _w = None
     _cas = None
-    _vf=None
+    _vat=None
     _vs = None
+    _vflows=None
 
-    def __init__(self, unique_id, model, length, width, crossing_altertives, vehicle_frequency, vehicle_speed = 10):
+    def __init__(self, unique_id, model, length, width, crossing_altertives, vehicle_addition_times, vehicle_speed = 10):
         super().__init__(unique_id, model)
         self._l = length
         self._w = width
         self._cas = crossing_altertives
-        self._vf = vehicle_frequency
+        self._vat = vehicle_addition_times
         self._vs = [] # initialise list of vehicles
 
         self._vspeed = vehicle_speed
+        self._vflows=[]
 
     def step(self):
         '''Update position of vehicles and remove them from road if they reach the end of the road.
@@ -437,16 +447,23 @@ class Road(Agent):
             if v.x >= self._l:
                 self._vs.remove(v)
 
+
         # Add new vehicles to the road
-        if np.random.rand() > self._vf:
+        if self._vat[self.model.schedule.time]==1:
             v = Vehicle(0, self._vspeed)
             self._vs.append(v)
+
+        if self.model.schedule.time==0:
+            flow=0
+        else:
+            flow = len(self._vs) / self.model.schedule.time
+        self._vflows.append(flow)
 
     def ca_vehicle_conflict(self, ca, ped_loc, ped_speed):
         if ca.getCrossingType() == 'unmarked':
 
             # Calculate time it would take pedestrian to cross the road
-            t_cross = self._w / ped_speed
+            t_cross = self._w / 1.5
 
             ca_loc = ca.getLoc()
             if ca_loc is None:
@@ -454,13 +471,13 @@ class Road(Agent):
             
             # loop through vehicles and see if any of them would pass through crossing in this time
             count = 0
-            for v in self._vs:
+            for i, v in enumerate(self._vs):
                 # exclude vehicle if they are already ahead of the crossing
-                if v.x>ca_loc:
+                if np.sign(v.x-ca_loc)==1:
                     continue
 
-                x_tcross = v.x + (t_cross*v.s)
-                if x_tcross>ca_loc:
+                x_tcross = v.x + (t_cross*v.speed)
+                if np.sign(x_tcross-ca_loc)==1:
                     count+=1
 
             if count>0:
@@ -483,28 +500,31 @@ class Road(Agent):
     
 
 class CrossingModel(Model):
-    def __init__(self, ped_origin, ped_destination, road_length, road_width, vehicle_flow, epsilon, gamma, ped_speed, lam, alpha, a_rate, seed=3):
+    def __init__(self, ped_origin, ped_destination, road_length, road_width, vehicle_addition_times, epsilon, gamma, ped_speed, lam, alpha, a_rate):
         self.schedule = RandomActivation(self)
         self.running = True
         self.nsteps = 0
+
+        np.random.set_state(random_state)
 
         # Create two crossing alternatives, one a zebra crossing and one mid block crossing
         zebra_location = road_length * 0.75
         zebra_type = 'zebra'
         mid_block_type = 'unmarked'
         
-        zebra = CrossingAlternative(0, self, location = zebra_location, ctype = zebra_type, name = 'z1', vehicle_flow = vehicle_flow)
-        unmarked = CrossingAlternative(1, self, ctype = mid_block_type, name = 'mid1', vehicle_flow = vehicle_flow)
+        zebra = CrossingAlternative(0, self, location = zebra_location, ctype = zebra_type, name = 'z1')
+        unmarked = CrossingAlternative(1, self, ctype = mid_block_type, name = 'mid1')
 
         # Crossing alternatives with salience factors
         crossing_altertives = np.array([unmarked,zebra])
 
         i=0
-        road = Road(i, self, length=road_length, width=road_width, crossing_altertives=crossing_altertives, vehicle_frequency=0.1, vehicle_speed=10)
+        self.road = Road(i, self, length=road_length, width=road_width, crossing_altertives=crossing_altertives, vehicle_addition_times=vehicle_addition_times, vehicle_speed=10)
+        self.schedule.add(self.road)
 
         model_type = 'sampling'
         #self.ped = Ped(i+1, self, location = ped_origin, speed = ped_speed, destination = ped_destination, crossing_altertives = crossing_altertives, road_length = road_length, road_width = road_width, epsilon = epsilon, gamma = gamma, lam = lam, alpha = alpha, a_rate = a_rate, model_type = model_type)
-        self.ped = Ped(i+1, self, location = ped_origin, speed = ped_speed, destination = ped_destination, road = road, epsilon = epsilon, gamma = gamma, lam = lam, alpha = alpha, a_rate = a_rate, model_type = model_type)
+        self.ped = Ped(i+1, self, location = ped_origin, speed = ped_speed, destination = ped_destination, road = self.road, epsilon = epsilon, gamma = gamma, lam = lam, alpha = alpha, a_rate = a_rate, model_type = model_type)
         self.schedule.add(self.ped)
 
         self.datacollector = DataCollector(agent_reporters={"CrossingType": "chosenCAType"})
@@ -512,10 +532,17 @@ class CrossingModel(Model):
         self.crossing_choice = None
         self.choice_step = None
 
+    def get_ped_count(self):
+        count=0
+        for a in self.schedule.agents:
+            if isinstance(a, Ped):
+                count+=1
+        return count
+
     def step(self):
-        self.datacollector.collect(self)
+        #self.datacollector.collect(self)
         self.schedule.step()
-        if self.schedule.get_agent_count() == 0:
+        if self.get_ped_count() == 0:
             self.running = False
         self.nsteps += 1
 

@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import scipy.special
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 
 from mesa.batchrunner import BatchRunner
  
@@ -57,7 +58,20 @@ def ped_salience_distance_and_factors(ped, n_steps, salience_type = 'ca'):
 def plot_utilities_and_costs(df, cols, labels, title, title_suffix, vehicle_flow_col = None, ylab = None, xlab = None, dict_markers = None):
 	fig = plt.figure(figsize=(12,5))
 
-	fig.gca().set_title(title+title_suffix)
+	fig.suptitle(title+title_suffix)
+
+	# create grid for different subplots
+	spec = gridspec.GridSpec(ncols=1, nrows=2, width_ratios=[1], wspace=0.5, hspace=0.1, height_ratios=[3, 1])
+	 
+	# initializing x,y axis value
+	x = np.arange(0, 10, 0.1)
+	y = np.cos(x)
+	 
+	# ax0 will take 0th position in
+	# geometry(Grid we created for subplots),
+	# as we defined the position as "spec[0]"
+	ax0 = fig.add_subplot(spec[0])
+	ax1 = fig.add_subplot(spec[1])
 
 	linestyles = ['-', '--', ':']
 	colours = ['blue','red']
@@ -65,23 +79,35 @@ def plot_utilities_and_costs(df, cols, labels, title, title_suffix, vehicle_flow
 	# Plot pairs of utilities and costs (for each crossing alternative)
 	for i in range(0, len(cols), 2):
 		l = linestyles[i//2]
-		ax = df[cols[i]].plot(color=colours[0], linestyle = l, label=labels[i])
-		ax = df[cols[i+1]].plot(color=colours[1], linestyle = l, secondary_y=False, label=labels[i+1])
+		ax0 = df[cols[i]].plot(ax=ax0, color=colours[0], linestyle = l, label=labels[i])
+		ax0 = df[cols[i+1]].plot(ax=ax0, color=colours[1], linestyle = l, secondary_y=False, label=labels[i+1])
 
 	if vehicle_flow_col is not None:
-		ax = df[vehicle_flow_col].plot(color='black', linestyle = 'dotted', label=vehicle_flow_col)
+		ax1 = df[vehicle_flow_col].plot(ax=ax1, color='black', linestyle = 'dotted', label=vehicle_flow_col)
 
 	if ylab is not None:
-		ax.set_ylabel(ylab)
+		ax0.set_ylabel(ylab)
 	if xlab is not None:
-		ax.set_xlabel(xlab)
+		ax1.set_xlabel(xlab)
 
-	h1, l1 = ax.get_legend_handles_labels()
+	ax1.set_ylabel(r"vehicles $s^{-1}$", fontsize=9)
+
+	ax0.get_xaxis().set_visible(False)
+	ax0.spines.right.set_visible(False)
+	ax0.spines.top.set_visible(False)
+	ax1.spines.right.set_visible(False)
+	ax1.spines.top.set_visible(False)
+
+	h1, l1 = ax0.get_legend_handles_labels()
 
 	# Add marker for positions of zebra crossing and destination
 	for k,v in dict_markers.items():
+		plt.sca(ax0)
 		plt.axvline(v, linestyle = '--', linewidth = 0.5, color = 'grey')
-		plt.annotate(k, (v - 6, ax.get_ylim()[0] + 0.07), xycoords = 'data')
+
+		plt.sca(ax1)
+		plt.axvline(v, linestyle = '--', linewidth = 0.5, color = 'grey')
+		plt.annotate(k, (v - 6, ax1.get_ylim()[0] + 0.15), xycoords = 'data')
 
 	fig.legend(h1,l1,loc=4)
 	return fig
@@ -168,17 +194,21 @@ ped_start_location = 0
 ped_walking_speed = 3
 gamma = 0.9
 epsilon = 2
-lam = 1
+lam = 0.5
 a_rate = 1
 dest = road_length/3
 dict_markers = {'Dedicated\nCrossing':zebra_location}
 
-zebra = CrossingAlternative(0, None, location = zebra_location, ctype = zebra_type, name = 'z1', vehicle_flow = 0)
-unmarked = CrossingAlternative(1, None, ctype = mid_block_type, name = 'mid1', vehicle_flow = 0)
+v_low = [(i%5)//4 for i in range(51)]
+v_high = [1 for i in range(51)]
+
+
+zebra = CrossingAlternative(0, None, location = zebra_location, ctype = zebra_type, name = 'z1')
+unmarked = CrossingAlternative(1, None, ctype = mid_block_type, name = 'mid1')
 crossing_altertives = [unmarked, zebra]
 
 i=0
-road = Road(i, None, length=road_length, width=road_width, crossing_altertives=crossing_altertives, vehicle_frequency=0.1)
+road = Road(i, None, length=road_length, width=road_width, crossing_altertives=crossing_altertives, vehicle_addition_times=v_low)
 
 ped = Ped(i+1, None, location = 0, speed = ped_walking_speed, destination = dest, road=road, epsilon = 1.2, gamma = 0.9, lam = lam, alpha = 0.5, a_rate = 1)
 
@@ -191,7 +221,7 @@ cols = ['unmarked_dist','unmarked_prob', 'zebra_dist','zebra_prob']
 labels = ['Informal $d_j$','Informal probability', 'Dedicated $d_j$','Dedicated probability']
 
 fig_probs_sals = plot_dists_and_probs(df_data, cols, labels, "Sampling Probabilities", "", ylab1 = "$d_j$", ylab2 = "p", xlab = "$P(t)$", dict_markers = dict_markers)
-fig_probs_sals.show()
+#fig_probs_sals.show()
 fig_probs_sals.savefig(".\\img\\distances_probabilities_l1.png")
 
 
@@ -201,37 +231,35 @@ fig_probs_sals.savefig(".\\img\\distances_probabilities_l1.png")
 #
 #################################
 
-# update vehicle flow of crossing alternatives
-# Increase vehcile flow
-v_flow_low = 1
-v_flow_high = 3
-
-zebra._vehicle_flow = v_flow_low
-unmarked._vehicle_flow = v_flow_low
-
-pedhalf = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, road=road, epsilon = epsilon, gamma = gamma, lam = lam, alpha = 0.5, a_rate = 1)
+#pedhalf = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, road=road, epsilon = epsilon, gamma = gamma, lam = lam, alpha = 0.5, a_rate = 1)
 
 utility_costs_cols = ['unmarked_u','zebra_u', 'unmarked_wt', 'zebra_wt', 'unmarked_ve', 'zebra_ve', 'loc']
 utility_costs_labels = ['Informal Utility','Dedicated Utility', 'Informal Time Attr.', 'Dedicated Time Attr.', 'Informal Exposure Attr.', 'Dedicated Exposure Attr.', 'loc']
+ped_cost_cols = ['unmarked_wt','unmarked_ve', 'zebra_wt', 'zebra_ve']
+ped_utility_cols = ['unmarked_u','zebra_u']
 
-# Get utility for 0 vehicle flow and compare to costs for 5 vehicle flow
-model = 'sampling'
-u0 = np.append(get_utility_costs_of_crossing_alterantives(pedhalf, model), pedhalf._loc)
-utility_r0_v0 = np.array([u0])
-for i in range(1,50):
-	pedhalf._loc += 1
-	pedhalf.accumulate_ca_activation()
-	ui = np.append(get_utility_costs_of_crossing_alterantives(pedhalf, model), pedhalf._loc)
-	utility_r0_v0 = np.append(utility_r0_v0, [ui], axis=0)
 
-df_u_r0_v2 = pd.DataFrame(columns = utility_costs_cols, data = utility_r0_v0)
-df_u_r0_v2['Vehicle Flow'] = v_flow_low
+alpha = 0.5
+suffs = " lam:{}, alpha:{}".format(lam, alpha)
+model_vlow = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_addition_times = v_low, epsilon = epsilon, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, alpha = alpha, a_rate = a_rate)
+while model_vlow.running:
+	model_vlow.step()
+
+	vs = model_vlow.road._vs
+	print("Time:{}".format(model_vlow.schedule.time))
+	print("Vehicles pos:{}".format([v.x for v in vs]))
+
+df_attrs = pd.DataFrame(columns = ped_cost_cols, data = model_vlow.ped._ca_costs_history[1:])
+df_utilities = pd.DataFrame(columns = ped_utility_cols, data = model_vlow.ped._ca_utility_history[1:])
+
+df_u_r0_v2 = pd.merge(df_utilities, df_attrs, left_index = True, right_index = True)
+df_u_r0_v2['Vehicle Flow'] = model_vlow.road._vflows[:-1]
 
 dict_markers['Destination'] = dest
-fig_u_r0_v2 = plot_utilities_and_costs(df_u_r0_v2, utility_costs_cols[:-1], utility_costs_labels[:-1], 'Attributes and Utilities', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', xlab = "$P(t)$", dict_markers =dict_markers)
-fig_u_r0_v2.show()
-fig_u_r0_v2.savefig(".\\img\\attrs_utilities_a0.5_vlow.png")
+fig_u_r0_v2 = 	plot_utilities_and_costs(df_u_r0_v2, utility_costs_cols[:-1], utility_costs_labels[:-1], 'Attributes and Utilities', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', xlab = "$P(t)$", dict_markers =dict_markers)
 
+#fig_u_r0_v2.show()
+fig_u_r0_v2.savefig(".\\img\\attrs_utilities_a0.5_vlow.png")
 
 
 ################################
@@ -240,7 +268,7 @@ fig_u_r0_v2.savefig(".\\img\\attrs_utilities_a0.5_vlow.png")
 #
 ################################
 gap_size = 5
-v_vary_low = [v_flow_low]*road_length
+v_vary_low = v_low
 for i in range(-gap_size, gap_size):
 	ind = int(dest + i)
 	v_vary_low[ind]=0
@@ -249,9 +277,14 @@ lam = 1
 alpha = 0.5
 vf = v_vary_low
 suffs = " lam:{}, alpha:{}".format(lam, alpha)
-model_vlow = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_flow = vf, epsilon = epsilon, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, alpha = alpha, a_rate = a_rate)
+model_vlow = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_addition_times = vf, epsilon = epsilon, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, alpha = alpha, a_rate = a_rate)
 while model_vlow.running:
 	model_vlow.step()
+
+	# print position of each vehicle
+	vs = model_vlow.road._vs
+	print("Time:{}".format(model_vlow.schedule.time))
+	print("Vehicles pos:{}".format([v.x for v in vs]))
 
 # Get the utilities and attributes from the model_vlow
 ped_cost_cols = ['unmarked_wt','unmarked_ve', 'zebra_wt', 'zebra_ve']
@@ -261,10 +294,10 @@ df_attrs = pd.DataFrame(columns = ped_cost_cols, data = model_vlow.ped._ca_costs
 df_utilities = pd.DataFrame(columns = ped_utility_cols, data = model_vlow.ped._ca_utility_history[1:])
 
 df_u_a = pd.merge(df_utilities, df_attrs, left_index = True, right_index = True)
-df_u_a['Vehicle Flow'] = vf
+df_u_a['Vehicle Flow'] = model_vlow.road._vflows[:-1]
 
 fig_u_a= plot_utilities_and_costs(df_u_a, utility_costs_cols[:-1], utility_costs_labels[:-1], 'Attributes and Utilities with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', xlab = "$P(t)$", dict_markers =dict_markers)
-fig_u_a.show()
+#fig_u_a.show()
 fig_u_a.savefig(".\\img\\attrs_utilities_a0.5_v_vary_low.png")
 
 
@@ -277,7 +310,7 @@ fig_u_a.savefig(".\\img\\attrs_utilities_a0.5_v_vary_low.png")
 activation_cols = ['unmarked_a','zebra_a']
 activation_labels = ['Informal Crossing', 'Dedicated Crossing']
 df_activations = pd.DataFrame(columns = activation_cols, data = model_vlow.ped.getActivationHistory()[1:])
-df_activations['Vehicle Flow'] = v_vary_low
+df_activations['Vehicle Flow'] = model_vlow.road._vflows[:-1]
 
 # Add in rolling errors
 # Doesn't make sense to calculate sd of trend data
@@ -289,7 +322,7 @@ error_cols = ['unmarked_sd', 'zebra_sd']
 
 dict_markers['Choice\nMade'] = model_vlow.choice_step
 f_act = plot_two_series(df_activations, activation_cols, activation_labels, 'Accumulated Activation with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', dict_markers = dict_markers, ylab = 'Activation', xlab = 'P(t)')
-f_act.show()
+#f_act.show()
 f_act.savefig(".\\img\\activation_a0.5_v_vary_low.png")
 
 
@@ -300,7 +333,7 @@ f_act.savefig(".\\img\\activation_a0.5_v_vary_low.png")
 #
 #################################
 gap_size = 3
-v_vary_high = [v_flow_high]*road_length
+v_vary_high = v_high
 for i in range(-gap_size, gap_size):
 	ind = int(dest + i)
 	v_vary_high[ind]=0
@@ -309,14 +342,14 @@ lam = 1
 alpha = 0.5
 vf = v_vary_high
 suffs = " lam:{}, alpha:{}".format(lam, alpha)
-model_vhigh = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_flow = vf, epsilon = epsilon, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, alpha = alpha, a_rate = a_rate)
+model_vhigh = CrossingModel(	ped_origin = ped_start_location, ped_destination = dest, road_length = road_length, road_width = road_width, vehicle_addition_times = vf, epsilon = epsilon, gamma = gamma, ped_speed = ped_walking_speed, lam = lam, alpha = alpha, a_rate = a_rate)
 while model_vhigh.running:
 	model_vhigh.step()
 
 df_activations = pd.DataFrame(columns = activation_cols, data = model_vhigh.ped.getActivationHistory()[1:])
-df_activations['Vehicle Flow'] = v_vary_high
+df_activations['Vehicle Flow'] = model_vhigh.road._vflows[:-1]
 
 dict_markers['Choice\nMade'] = model_vhigh.choice_step
 f_act = plot_two_series(df_activations, activation_cols, activation_labels, 'Accumulated Activation with Varied Vehicle Flow', "\n $\\alpha$ = {}".format(0.5), vehicle_flow_col = 'Vehicle Flow', dict_markers = dict_markers, ylab = 'Activation', xlab = 'P(t)')
-f_act.show()
+#f_act.show()
 f_act.savefig(".\\img\\activation_a0.5_v_vary_high.png")
