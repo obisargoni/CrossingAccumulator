@@ -212,7 +212,7 @@ epsilon = 3
 lam = 0.5
 a_rate = 1
 dest = road_length/3
-dict_markers = {'Dedicated\nCrossing':zebra_location}
+dict_markers = {'Marked\nCrossing':zebra_location}
 
 v_low = [(i%5)//4 for i in range(51)]
 v_high = [1 for i in range(51)]
@@ -233,7 +233,7 @@ dict_data = ped_salience_distance_and_factors(ped, 50, salience_type = 'ca')
 df_data = pd.merge(dict_data['salience_distances'], dict_data['salience_factors'], on = 'loc', suffixes = ('_dist', '_prob'))
 
 cols = ['unmarked_dist','unmarked_prob', 'zebra_dist','zebra_prob']
-labels = ['Informal $d_j$','Informal probability', 'Dedicated $d_j$','Dedicated probability']
+labels = ['Informal $d_j$','Informal probability', 'Marked $d_j$','Marked probability']
 
 fig_probs_sals = plot_dists_and_probs(df_data, cols, labels, "Sampling Probabilities", "", ylab1 = "$d_j$", ylab2 = "p", xlab = "$P(t)$", dict_markers = dict_markers)
 #fig_probs_sals.show()
@@ -249,7 +249,7 @@ fig_probs_sals.savefig(".\\img\\distances_probabilities_l1.png")
 #pedhalf = Ped(0, None, location = 0, speed = ped_walking_speed, destination = dest, road=road, epsilon = epsilon, gamma = gamma, lam = lam, alpha = 0.5, a_rate = 1)
 
 utility_costs_cols = ['unmarked_u','zebra_u', 'unmarked_wt', 'zebra_wt', 'unmarked_ve', 'zebra_ve', 'loc']
-utility_costs_labels = ['Informal Utility','Dedicated Utility', 'Informal Time Attr.', 'Dedicated Time Attr.', 'Informal Exposure Attr.', 'Dedicated Exposure Attr.', 'loc']
+utility_costs_labels = ['Informal Utility','Marked Utility', 'Informal Time Attr.', 'Marked Time Attr.', 'Informal Exposure Attr.', 'Marked Exposure Attr.', 'loc']
 ped_cost_cols = ['unmarked_wt','unmarked_ve', 'zebra_wt', 'zebra_ve']
 ped_utility_cols = ['unmarked_u','zebra_u']
 
@@ -313,7 +313,7 @@ fig_u_a.savefig(".\\img\\attrs_utilities_a0.5_v_vary_low.png")
 #
 ##############################
 activation_cols = ['unmarked_a','zebra_a']
-activation_labels = ['Informal Crossing', 'Dedicated Crossing']
+activation_labels = ['Informal Crossing', 'Marked Crossing']
 df_activations = pd.DataFrame(columns = activation_cols, data = model_vlow_vary.ped.getActivationHistory()[1:])
 df_activations['Vehicle Flow'] = model_vlow_vary.road._vflows[:-1]
 
