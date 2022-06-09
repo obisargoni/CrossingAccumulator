@@ -1,7 +1,7 @@
 # Testing out accumulator model of crossing option choice
 
 import numpy as np
-np.random.seed(11)
+np.random.seed(3)
 
 global random_state
 random_state = np.random.get_state()
@@ -12,7 +12,7 @@ import sys
 
 from mesa import Agent, Model
 from mesa.datacollection import DataCollector
-from mesa.time import RandomActivation
+from mesa.time import BaseScheduler
 
 class CrossingAlternative(Agent):
 
@@ -370,7 +370,7 @@ class Ped(Agent):
 
         # Check whether the largest activation is greater than second largest by threshold amount
         # If it is then select largest
-        if (sorted_activations[-1] - sorted_activations[-2]) > self._epsilon:
+        if sorted_activations[-1] > self._epsilon:
             ca_i = np.argmax(ca_activations)
             self._chosen_ca = self._crossing_alternatives[ca_i]
             self.model.choice_step = self.model.nsteps
@@ -501,7 +501,7 @@ class Road(Agent):
 
 class CrossingModel(Model):
     def __init__(self, ped_origin, ped_destination, road_length, road_width, vehicle_addition_times, epsilon, gamma, ped_speed, lam, alpha, a_rate):
-        self.schedule = RandomActivation(self)
+        self.schedule = BaseScheduler(self)
         self.running = True
         self.nsteps = 0
 
